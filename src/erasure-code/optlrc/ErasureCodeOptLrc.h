@@ -16,8 +16,8 @@ public:
   std::string DEFAULT_K;
   int r;
   std::string DEFAULT_R;
-  string ruleset_root;
-  string ruleset_failure_domain;
+  std::string ruleset_root;
+  std::string ruleset_failure_domain;
 
   //explicit ErasureCodeOptLrc() :
   explicit ErasureCodeOptLrc() :
@@ -33,38 +33,41 @@ public:
 	  //per_chunk_alignment(false)
   {}
 
-  virtual ~ErasureCodeOptLrc() {}
-  virtual int init(ErasureCodeProfile &profile, ostream *ss);
-  virtual unsigned int get_chunk_count() const {
+~ErasureCodeOptLrc() {}
+int init(ErasureCodeProfile &profile, std::ostream *ss);
+unsigned int get_chunk_count() const {
 	  return n;
   }
-  virtual unsigned int get_data_chunk_count() const {
+unsigned int get_data_chunk_count() const {
 	  return k;
   }
-  virtual unsigned int get_chunk_size(unsigned int object_size) const;
+unsigned int get_chunk_size(unsigned int object_size) const;
 
-  virtual int encode_chunks(const set<int> &want_to_encode,
-			    map<int, bufferlist> *encoded);
+int encode_chunks(const std::set<int> &want_to_encode,
+      	    std::map<int, bufferlist> *encoded);
 
-  virtual int decode_chunks(const set<int> &want_to_read,
-			    const map<int, bufferlist> &chunks,
-			    map<int, bufferlist> *decoded);
+int decode_chunks(const std::set<int> &want_to_read,
+			    const std::map<int, bufferlist> &chunks,
+			    std::map<int, bufferlist> *decoded);
 
-//  virtual int init(ErasureCodeProfile &profile, ostream *ss);
+//  virtual int init(ErasureCodeProfile &profile, std::ostream *ss);
 
-virtual void optlrc_encode(const set<int> &want_to_encode, 
-							char **data, char **coding, 
-							int blocksize);
-						   
-virtual int minimum_to_decode(const set<int> &want_to_read,
-			const set<int> &available,
-			set<int> *minimum);
+void optlrc_encode(const std::set<int> &want_to_encode, 
+						char **data, char **coding, 
+						int blocksize);
+					   
+int minimum_to_decode(const std::set<int> &want_to_read,
+		const std::set<int> &available,
+		std::set<int> *minimum);
 
-virtual int create_ruleset(const string &name,
-		     CrushWrapper &crush,
-		     ostream *ss) const;
+//int create_rulestd::set(const std::string &name,
+//		     CrushWrapper &crush,
+//		     std::ostream *ss) const;
+int create_ruleset(const std::string &name,
+			CrushWrapper &crush,
+			std::ostream *ss) const override;
 protected:
-  virtual int parse(ErasureCodeProfile &profile, ostream *ss);
+  virtual int parse(ErasureCodeProfile &profile, std::ostream *ss);
 };
 
 #endif
