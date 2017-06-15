@@ -13,10 +13,10 @@
 #include "include/assert.h"
 
 extern "C" {
-#include "jerasure.h"
-#include "reed_sol.h"
-#include "galois.h"
-#include "liberation.h"
+#include "erasure-code/jerasure/jerasure/include/jerasure.h"
+#include "erasure-code/jerasure/jerasure/include/reed_sol.h"
+#include "erasure-code/jerasure/jerasure/include/galois.h"
+#include "erasure-code/jerasure/jerasure/include/liberation.h"
 }
 
 using namespace std;
@@ -48,7 +48,7 @@ int ErasureCodeOptLrc::create_ruleset(const string &name,
 }
 inline unsigned int get_alignment()
 {
-    return BASIC_BLOCK_SIZE;
+	return ErasureCodeOptLrc::k*8*sizeof(int);
 }
 
 unsigned int ErasureCodeOptLrc::get_chunk_size(unsigned int object_size) const
@@ -68,6 +68,8 @@ unsigned int ErasureCodeOptLrc::get_chunk_size(unsigned int object_size) const
 int ErasureCodeOptLrc::init(ErasureCodeProfile& profile, ostream *ss)
 {
   int err = 0;
+
+  //dout(20) << __func__ << " enter init" << dendl;
   //dout(10) << "technique=" << technique << dendl;
   //profile["technique"] = technique;
   err |= to_string("ruleset-root", profile,
@@ -100,6 +102,7 @@ int ErasureCodeOptLrc::parse(ErasureCodeProfile &profile,
     err = -EINVAL;
   }
   err |= sanity_check_k(k, ss);
+  //dout(20) << __func__ << " parse done" << dendl;
   return err;
 }
 
@@ -108,8 +111,10 @@ int ErasureCodeOptLrc::encode_chunks(const set<int> &want_to_encode,
 				       map<int, bufferlist> *encoded)
 {
 	char *chunks[n];
+dout(20) << __func__ << " want_to_encode " << want_to_encode << dendl;
+
 	for (int i = 0; i < n; i++)
-    chunks[i] = (*encoded)[i].c_str();
+    		chunks[i] = (*encoded)[i].c_str();
   optlrc_encode(want_to_encode, &chunks[0], &chunks[k], (*encoded->begin()).second.length());
   return 0;
 }
@@ -118,6 +123,7 @@ void ErasureCodeOptLrc::optlrc_encode(const set<int> &want_to_encode, char **dat
 {
 OptLRC_Configs optlrc_configs;
 POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
+           dout(20) << __func__ << " poptLRC_G[2][2]  " << pOptLRC_G->optlrc_encode[2][2] << dendl;
 	// TODO select correct group, local can be done with want_to_encode/r
 	set<int> data_chunks;
 	
@@ -126,7 +132,7 @@ POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
             //when init=0 we first insert value to dst, if init=1 we XOR it with the existing dst
             init = 0;
 	    char *dst = coding[0] + i*blocksize;	
-	    for (int j=0 ; j<k; i++) { 
+	    for (int j=0 ; j<k; j++) { 
 	    	char *src = data[0] + j*blocksize;
 	    	galois_w08_region_multiply(src,
 	    	                pOptLRC_G->optlrc_encode[i+k][j],
@@ -182,8 +188,8 @@ POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
     for (set<int>::iterator it1 = failed_groups.begin(); it1 != failed_groups.end(); ++it1){
         for (set<int>::iterator it2 = available_chunks.begin(); it2 != available_chunks.end(); ++it2){
             //
-            if ((pOptLRC_G->optlrc_perm[*it2] / (r+1)) == pOptLRC_G->optlrc_perm[*it1] )
-                 minimum->insert(*it2);
+		if ((pOptLRC_G->optlrc_perm[*it2] / (r+1)) == *it1 )
+                	minimum->insert(*it2);
         }
     }
     dout(20) << __func__ << " minimum = " << *minimum << dendl;

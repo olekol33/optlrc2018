@@ -476,6 +476,8 @@ $DAEMONOPTS
         filestore wbthrottle xfs ios hard limit = 20
         filestore wbthrottle xfs inodes hard limit = 30
         filestore wbthrottle btrfs ios start flusher = 10
+	osd max object name len = 256
+	osd max object namespace len = 64
         filestore wbthrottle btrfs ios hard limit = 20
         filestore wbthrottle btrfs inodes hard limit = 30
         osd copyfrom max chunk = 524288
