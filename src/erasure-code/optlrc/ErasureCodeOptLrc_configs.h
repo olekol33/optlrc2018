@@ -13,10 +13,12 @@
 #define MAX_LOCALITY_CHUNKS   8
 #define MAX_MATRIX          256
 #define MAX_OPTLRC_CHUNKS   4
+#define MAX_GROUPS 10
 
 typedef struct OptLRC {
     int optlrc_encode[MAX_MATRIX][MAX_MATRIX];
     int optlrc_perm[MAX_MATRIX];
+    int optlrc_coef[MAX_GROUPS][MAX_LOCALITY_CHUNKS];
 
 } OptLRC, *POptLRC;
 
@@ -26,13 +28,19 @@ optlrc_encode : {
         {0, 1, 0, 0},
         {0, 0, 1, 0},
         {0, 0, 0, 1},
-        {2, 2, 0, 0},
-        {0, 0, 1, 2},
-        {0, 0, 0, 1},
-        {2, 2, 0, 0},
-        {0, 0, 1, 2}
+        {214, 215, 0, 0},
+        {0, 0, 214, 215},
+        {214,222,113,120},
+        {41,33,99,106},
+        {9,1,51,58}
 },
-optlrc_perm : {0,1,3,4,2,5,6,7,8}
+optlrc_perm : {0,1,3,4,2,5,6,7,8},
+optlrc_coef: {
+	{214,215,1},
+	{214,215,1},
+	{1,214,215}
+}
+
 
 
 };

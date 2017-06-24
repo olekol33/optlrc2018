@@ -41,10 +41,13 @@ unsigned int get_chunk_count() const {
 unsigned int get_data_chunk_count() const {
 	  return k;
   }
+unsigned int get_alignment() const;
 unsigned int get_chunk_size(unsigned int object_size) const;
 
 int encode_chunks(const std::set<int> &want_to_encode,
       	    std::map<int, bufferlist> *encoded);
+int optlrc_decode_local(const int erased, int *matrix, 
+				char *decoded[], int group_size, int blocksize);
 
 int decode_chunks(const std::set<int> &want_to_read,
 			    const std::map<int, bufferlist> &chunks,
@@ -52,9 +55,7 @@ int decode_chunks(const std::set<int> &want_to_read,
 
 //  virtual int init(ErasureCodeProfile &profile, std::ostream *ss);
 
-void optlrc_encode(const std::set<int> &want_to_encode, 
-						char **data, char **coding, 
-						int blocksize);
+void optlrc_encode(char **data, char **coding, int blocksize);
 					   
 int minimum_to_decode(const std::set<int> &want_to_read,
 		const std::set<int> &available,

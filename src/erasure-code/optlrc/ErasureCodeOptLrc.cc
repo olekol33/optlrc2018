@@ -26,6 +26,7 @@ using namespace std;
 #undef dout_prefix
 #define dout_prefix _prefix(_dout)
 #define BASIC_BLOCK_SIZE 67108864
+#define talloc(type, num) (type *) malloc(sizeof(type)*(num))
 //OptLRC_Configs optlrc_configs;
 //POptLRC pOptLRC_G = optlrc_configs.configs[ErasureCodeOptLrc::n][ErasureCodeOptLrc::k][ErasureCodeOptLrc::r];
 
@@ -46,9 +47,9 @@ int ErasureCodeOptLrc::create_ruleset(const string &name,
     return crush.get_rule_mask_ruleset(ruleid);
   }
 }
-inline unsigned int get_alignment()
+unsigned int ErasureCodeOptLrc::get_alignment() const
 {
-	return ErasureCodeOptLrc::k*8*sizeof(int);
+	return k*8*sizeof(int);
 }
 
 unsigned int ErasureCodeOptLrc::get_chunk_size(unsigned int object_size) const
@@ -111,37 +112,32 @@ int ErasureCodeOptLrc::encode_chunks(const set<int> &want_to_encode,
 				       map<int, bufferlist> *encoded)
 {
 	char *chunks[n];
-dout(20) << __func__ << " want_to_encode " << want_to_encode << dendl;
+	dout(20) << __func__ << " want_to_encode " << want_to_encode << dendl;
 
 	for (int i = 0; i < n; i++)
-    		chunks[i] = (*encoded)[i].c_str();
-  optlrc_encode(want_to_encode, &chunks[0], &chunks[k], (*encoded->begin()).second.length());
-  return 0;
+		chunks[i] = (*encoded)[i].c_str();
+	optlrc_encode(&chunks[0], &chunks[k], (*encoded->begin()).second.length());
+	return 0;
 }
 
-void ErasureCodeOptLrc::optlrc_encode(const set<int> &want_to_encode, char **data, char **coding, int blocksize)
+void ErasureCodeOptLrc::optlrc_encode(char **data, char **coding, int blocksize)
 {
-OptLRC_Configs optlrc_configs;
-POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
-           dout(20) << __func__ << " poptLRC_G[2][2]  " << pOptLRC_G->optlrc_encode[2][2] << dendl;
-	// TODO select correct group, local can be done with want_to_encode/r
-	set<int> data_chunks;
-	
-	int init;
-        for (int i=0 ; i < n-k ; i++) {
-            //when init=0 we first insert value to dst, if init=1 we XOR it with the existing dst
-            init = 0;
-	    char *dst = coding[0] + i*blocksize;	
-	    for (int j=0 ; j<k; j++) { 
-	    	char *src = data[0] + j*blocksize;
-	    	galois_w08_region_multiply(src,
-	    	                pOptLRC_G->optlrc_encode[i+k][j],
-	    	                blocksize,
-	    	                dst,
-	    	                init);
-                init=1;
-	    }
-        }		
+	OptLRC_Configs optlrc_configs;
+	POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
+	int *matrix = talloc(int, (n-k)*k);
+	  if (matrix == NULL) {
+	    free(matrix);
+	    std::exit(0);
+	  }
+	for (int i=0 ; i < n-k ; i++) {
+		for (int j=0 ; j<k; j++) {
+			matrix[i*k+j]= pOptLRC_G->optlrc_encode[i+k][j];
+		}
+	}
+
+	jerasure_matrix_encode(k, n-k, 8, matrix, data, coding, blocksize);
+
+	free(matrix);
 }
 
 						   
@@ -199,6 +195,32 @@ POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
 
 
 
+int ErasureCodeOptLrc::optlrc_decode_local(const int erased, int *matrix, char *decoded[], int group_size, int blocksize) {
+
+	int coef_mat[r+1];
+	//long = result;
+	char *dst = talloc(char, blocksize);
+	int init=0;
+	OptLRC_Configs optlrc_configs;
+	POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
+	int loc_erased = pOptLRC_G->optlrc_perm[erased] % (r+1);
+	int group = pOptLRC_G->optlrc_perm[erased] / (r+1);
+
+    //normalize coefficients by lost chunk coefficient
+	for (int i=0;i<group_size;i++) {
+		coef_mat[i] = galois_single_divide(pOptLRC_G->optlrc_coef[group][i],
+				pOptLRC_G->optlrc_coef[group][loc_erased],8);
+	}
+	for (int i=0;i<group_size;i++){
+		if (i!=loc_erased){
+			char *src = decoded[i];
+			galois_w08_region_multiply(src, coef_mat[i], blocksize, dst, init);
+			init=1;
+		}
+	}
+	memcpy(decoded[loc_erased], dst, blocksize);
+	return 0;
+}
 
 int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
 				       const map<int, bufferlist> &chunks,
@@ -211,60 +233,63 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
 	//int erasures_count = 0;
 	char *data[k];
 	char *coding[n-k];
+	char *local[r+1];
 	int failed_group;
+	int loc_erased;
 	set<int> used_data;
 	OptLRC_Configs optlrc_configs;
 	POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
-	// TODO select correct group, local can be done with want_to_encode/r
-	    
+    for (unsigned int i = 0; i < n; i++) {
+        if (chunks.find(i) == chunks.end()) {
+            bufferptr ptr(buffer::create_aligned(blocksize, SIMD_ALIGN));
+            ptr.zero();
+            (*decoded)[i].push_front(ptr);
+
+        } else {
+            (*decoded)[i] = chunks.find(i)->second;
+            (*decoded)[i].rebuild_aligned(SIMD_ALIGN);
+        }
+    }
+
+//find all erasures
 	for (int i =  0; i < n; i++) {
-	if (chunks.find(i) == chunks.end()) {
-	  erasures[erasures_count] = i;
-	  erasures_count++;
+		if (chunks.find(i) == chunks.end()) {
+		  erasures[erasures_count] = i;
+		  erasures_count++;
+		}
+		if (i < k)
+		  data[i] = (*decoded)[i].c_str();
+		else
+		  coding[i - k] = (*decoded)[i].c_str();
 	}
-	if (i < k)
-	  data[i] = (*decoded)[i].c_str();
-	else
-	  coding[i - k] = (*decoded)[i].c_str();
-	}
+
 	int i=0;
+	int m=0;
 	// k failed chunks at max, (r+1)*k matrix for each
-	int optlrc_matrix_local[k][r+1][k];	
-	for (int f=0; f<erasures_count; ++f )
-	{
-		int it = erasures[f];
-	    failed_group = pOptLRC_G->optlrc_perm[it] /(r+1);
-	//TODO: adjust for arbitrary code length
-	    for (i=0 ; i<r+1 ; i++) {
-		    for (int j=0; j<k; j++) {
-		    	optlrc_matrix_local[erasure][i][j] = pOptLRC_G->optlrc_encode[(r+1)*failed_group+i][pOptLRC_G->optlrc_perm[j]];
-		    	i++;
-		    	//think how to multiply only partial data bus
-		    }
-	    }
-	    erasure++;
-	} 
-	        
-	//TODO: adjust for arbitrary code length
-	
+	int *optlrc_matrix_local = talloc(int, (r+1)*k);
 	for (int f=0; f<erasures_count; ++f )
 	{
 		int erased = erasures[f];
-		int nezero=0;
-	    for (int j=0; j<k; j++) {
-	    for (i=0 ; i<r+1 ; i++) {
-	    	if (optlrc_matrix_local[erased][i][j] != 0)
-	    		nezero=1;
-	    	}	
-	    if (nezero==1)
-	        used_data.insert(j);
-	    //used to find the parity location of this group
+		//calculate failed group from real location
 	    failed_group = pOptLRC_G->optlrc_perm[erased] /(r+1);
-	    i=0;
-	    while (pOptLRC_G->optlrc_perm[i] != r+ failed_group*(r+1))
-	        i++;
-	    jerasure_matrix_decode(used_data.size(), 1, 8, *(optlrc_matrix_local[erased]), 1, &erased, data, &coding[i], blocksize);
-	    }
+	//TODO: adjust for arbitrary code length
+        for (i=0;i<n;i++){
+        	//find rest of failed group from real location
+        	if ((pOptLRC_G->optlrc_perm[i] / (r+1)) == failed_group) {
+        		//collect local group
+        		local[m] = (*decoded)[i].c_str();
+        		char* test;
+        		test = (*decoded)[i].c_str();
+        		for (int j=0; j<k; j++) {
+        			optlrc_matrix_local[m*k + j] = pOptLRC_G->optlrc_encode[i][j];
+
+        		}
+        		m++;
+        	}
+        }
+        //Do decode
+        optlrc_decode_local(erased, optlrc_matrix_local, local, r+1, blocksize);
+	    erasure++;
 	 }
 	return 0;
 }	
