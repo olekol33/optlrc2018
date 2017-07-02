@@ -274,8 +274,9 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
         		m++;
         	}
         }
-    }
         optlrc_decode_local(erased, optlrc_matrix_local, &local[0], r+1, blocksize);
+            erasures_init--;
+    }
     /*for (unsigned int i = 0; i < n; i++)
         dout(0) << __func__ << " lost " << want_to_read << " 1post decode size of " << i << " is " <<  (*decoded)[i].length() << dendl;
     for (unsigned int i = 0; i < 20; i++) {
@@ -284,9 +285,6 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
 
     for (unsigned int i = 0; i < n; i++)
         dout(0) << __func__ << " lost " << want_to_read << " post decode size of " << i << " is " <<  (*decoded)[i].length() << dendl;*/
-            erasures_init--;
-
-    }
 
         if (erasures_init > 0) {
     derr << __func__ << " want to read " << want_to_read

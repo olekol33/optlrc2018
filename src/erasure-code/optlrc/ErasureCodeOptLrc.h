@@ -6,7 +6,7 @@
 #include "include/buffer.h"
 
 #define DEFAULT_RULESET_ROOT "default"
-#define DEFAULT_RULESET_FAILURE_DOMAIN "osd"
+#define DEFAULT_RULESET_FAILURE_DOMAIN "host"
 
 class ErasureCodeOptLrc : public ErasureCode {
 public:
@@ -32,34 +32,33 @@ public:
 	  ruleset_failure_domain(DEFAULT_RULESET_FAILURE_DOMAIN)
 	  //per_chunk_alignment(false)
   {}
-
-~ErasureCodeOptLrc() {}
-int init(ErasureCodeProfile &profile, std::ostream *ss);
-unsigned int get_chunk_count() const {
+~ErasureCodeOptLrc() override {}
+int init(ErasureCodeProfile &profile, std::ostream *ss) override;
+unsigned int get_chunk_count() const override {
 	  return n;
   }
-unsigned int get_data_chunk_count() const {
+unsigned int get_data_chunk_count() const override {
 	  return k;
   }
 unsigned int get_alignment() const;
-unsigned int get_chunk_size(unsigned int object_size) const;
+unsigned int get_chunk_size(unsigned int object_size) const override ;
 
 int encode_chunks(const std::set<int> &want_to_encode,
-      	    std::map<int, bufferlist> *encoded);
-int optlrc_decode_local(const int erased, int *matrix, 
+      	    std::map<int, bufferlist> *encoded) override;
+int optlrc_decode_local(const int erased, int *matrix,
 				char *decoded[], int group_size, int blocksize);
 
 int decode_chunks(const std::set<int> &want_to_read,
 			    const std::map<int, bufferlist> &chunks,
-			    std::map<int, bufferlist> *decoded);
+			    std::map<int, bufferlist> *decoded) override;
 
 //  virtual int init(ErasureCodeProfile &profile, std::ostream *ss);
 
 void optlrc_encode(char **data, char **coding, int blocksize);
-					   
+
 int minimum_to_decode(const std::set<int> &want_to_read,
 		const std::set<int> &available,
-		std::set<int> *minimum);
+		std::set<int> *minimum) override;
 
 //int create_rulestd::set(const std::string &name,
 //		     CrushWrapper &crush,
@@ -72,5 +71,3 @@ protected:
 };
 
 #endif
-
-
