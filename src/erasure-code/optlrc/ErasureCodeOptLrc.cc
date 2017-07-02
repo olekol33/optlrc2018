@@ -57,22 +57,20 @@ unsigned int ErasureCodeOptLrc::get_chunk_size(unsigned int object_size) const
     unsigned int alignment = get_alignment();
     unsigned int data_chunk_count = k;
     unsigned int chunk_size = (object_size + data_chunk_count - 1) / data_chunk_count;
+
     unsigned int modulo = chunk_size % alignment;
     if (modulo) {
+    dout(0) << __func__ << "get_chunk_size: " << chunk_size
+             << " padded to " << chunk_size + alignment - modulo << dendl;
         chunk_size += alignment - modulo;
     }
     return chunk_size;
 }
 
-
-
 int ErasureCodeOptLrc::init(ErasureCodeProfile& profile, ostream *ss)
 {
   int err = 0;
 
-  //dout(20) << __func__ << " enter init" << dendl;
-  //dout(10) << "technique=" << technique << dendl;
-  //profile["technique"] = technique;
   err |= to_string("ruleset-root", profile,
 		   &ruleset_root,
 		   DEFAULT_RULESET_ROOT, ss);
@@ -86,7 +84,6 @@ int ErasureCodeOptLrc::init(ErasureCodeProfile& profile, ostream *ss)
   ErasureCode::init(profile, ss);
   return err;
 }
-
 
 int ErasureCodeOptLrc::parse(ErasureCodeProfile &profile,
 			       ostream *ss)
@@ -103,16 +100,14 @@ int ErasureCodeOptLrc::parse(ErasureCodeProfile &profile,
     err = -EINVAL;
   }
   err |= sanity_check_k(k, ss);
-  //dout(20) << __func__ << " parse done" << dendl;
+  //dout(0) << __func__ << " parse done" << dendl;
   return err;
 }
-
 
 int ErasureCodeOptLrc::encode_chunks(const set<int> &want_to_encode,
 				       map<int, bufferlist> *encoded)
 {
 	char *chunks[n];
-	dout(20) << __func__ << " want_to_encode " << want_to_encode << dendl;
 
 	for (int i = 0; i < n; i++)
 		chunks[i] = (*encoded)[i].c_str();
@@ -140,25 +135,22 @@ void ErasureCodeOptLrc::optlrc_encode(char **data, char **coding, int blocksize)
 	free(matrix);
 }
 
-						   
 int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
 				      const set<int> &available_chunks,
 				      set<int> *minimum)
 {
-  dout(20) << __func__ << " want_to_read " << want_to_read
+  dout(0) << __func__ << " want_to_read " << want_to_read
 	   << " available_chunks " << available_chunks << dendl;
-  
-    set<int> erasures_total;
-OptLRC_Configs optlrc_configs;
-POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
-//    set<int> erasures_not_recovered;
-//    set<int> erasures_want;
-    set<int> failed_groups;
-    for (unsigned int i = 0; i < get_chunk_count(); ++i) {
-      if (available_chunks.count(i) == 0) {
-	erasures_total.insert(i);
-      }
-    }
+
+        set<int> erasures_total;
+        OptLRC_Configs optlrc_configs;
+        POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
+        set<int> failed_groups;
+        for (unsigned int i = 0; i < get_chunk_count(); ++i) {
+          if (available_chunks.count(i) == 0) {
+            erasures_total.insert(i);
+          }
+        }
     //
     // Case 1:
     //
@@ -167,14 +159,20 @@ POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
     //
     if (erasures_total.empty()) {
       *minimum = want_to_read;
-      dout(20) << __func__ << " minimum == want_to_read == "
+      dout(0) << __func__ << " Nothing missing - want_to_read == "
 	       << want_to_read << dendl;
       return 0;
     }
+
     //check to which group the failed node belongs, optlrc_perm points to the real symbol location
-    for (set<int>::iterator it = erasures_total.begin(); it != erasures_total.end(); ++it) 
+    for (set<int>::iterator it = erasures_total.begin(); it != erasures_total.end(); ++it) {
+            if (failed_groups.count(pOptLRC_G->optlrc_perm[*it] /(r+1)) >1 ) {
+                        dout(0) << __func__ << " twice failed in the same group "
+                                 << pOptLRC_G->optlrc_perm[*it] /(r+1) << dendl;
+                        return -EIO;
+                        //return 0;
+        }
         failed_groups.insert( pOptLRC_G->optlrc_perm[*it] /(r+1));
-        
 
     //
     // Case 2:
@@ -188,12 +186,11 @@ POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
                 	minimum->insert(*it2);
         }
     }
-    dout(20) << __func__ << " minimum = " << *minimum << dendl;
+    dout(0) << __func__ << " minimum = " << *minimum << dendl;
     return 0;
+    }
+
 }
-         
-
-
 
 int ErasureCodeOptLrc::optlrc_decode_local(const int erased, int *matrix, char *decoded[], int group_size, int blocksize) {
 
@@ -210,15 +207,17 @@ int ErasureCodeOptLrc::optlrc_decode_local(const int erased, int *matrix, char *
 	for (int i=0;i<group_size;i++) {
 		coef_mat[i] = galois_single_divide(pOptLRC_G->optlrc_coef[group][i],
 				pOptLRC_G->optlrc_coef[group][loc_erased],8);
+    	dout(0) << __func__ << " erase = " << erased << " coef_mat = " << coef_mat[i] << dendl;
 	}
 	for (int i=0;i<group_size;i++){
 		if (i!=loc_erased){
 			char *src = decoded[i];
-			galois_w08_region_multiply(src, coef_mat[i], blocksize, dst, init);
+			//galois_w08_region_multiply(src, coef_mat[i], blocksize, dst, init);
+			galois_w08_region_multiply(src, coef_mat[i], blocksize, decoded[loc_erased], init);
+    	dout(0) << __func__ << " blocksize = " << blocksize << dendl;
 			init=1;
 		}
 	}
-	memcpy(decoded[loc_erased], dst, blocksize);
 	return 0;
 }
 
@@ -228,7 +227,6 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
 {
 	int blocksize = (*chunks.begin()).second.length();
 	int erasure=0;
-	int erasures[n + 1];
 	int erasures_count = 0;
 	//int erasures_count = 0;
 	char *data[k];
@@ -239,7 +237,7 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
 	set<int> used_data;
 	OptLRC_Configs optlrc_configs;
 	POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
-    for (unsigned int i = 0; i < n; i++) {
+    /*for (unsigned int i = 0; i < n; i++) {
         if (chunks.find(i) == chunks.end()) {
             bufferptr ptr(buffer::create_aligned(blocksize, SIMD_ALIGN));
             ptr.zero();
@@ -249,49 +247,51 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
             (*decoded)[i] = chunks.find(i)->second;
             (*decoded)[i].rebuild_aligned(SIMD_ALIGN);
         }
-    }
+    }*/
 
-//find all erasures
-	for (int i =  0; i < n; i++) {
-		if (chunks.find(i) == chunks.end()) {
-		  erasures[erasures_count] = i;
-		  erasures_count++;
-		}
-		if (i < k)
-		  data[i] = (*decoded)[i].c_str();
-		else
-		  coding[i - k] = (*decoded)[i].c_str();
-	}
-
-	int i=0;
+        int erasures_init = erasures_count;
 	int m=0;
 	// k failed chunks at max, (r+1)*k matrix for each
 	int *optlrc_matrix_local = talloc(int, (r+1)*k);
-	for (int f=0; f<erasures_count; ++f )
-	{
-		int erased = erasures[f];
+	//for (int f=0; f<erasures_count; ++f )
+        erasures_count=want_to_read.size();
+
+        for (set<int>::iterator it = want_to_read.begin(); it != want_to_read.end(); ++it) {
+        dout(0) << __func__ << " reconstructing " << *it << dendl;
+		int erased = *it;
 		//calculate failed group from real location
 	    failed_group = pOptLRC_G->optlrc_perm[erased] /(r+1);
 	//TODO: adjust for arbitrary code length
-        for (i=0;i<n;i++){
+        for (int i=0;i<n;i++){
         	//find rest of failed group from real location
         	if ((pOptLRC_G->optlrc_perm[i] / (r+1)) == failed_group) {
         		//collect local group
         		local[m] = (*decoded)[i].c_str();
-        		char* test;
-        		test = (*decoded)[i].c_str();
-        		for (int j=0; j<k; j++) {
+                        for (int j=0; j<k; j++) {
         			optlrc_matrix_local[m*k + j] = pOptLRC_G->optlrc_encode[i][j];
 
         		}
         		m++;
         	}
         }
-        //Do decode
-        optlrc_decode_local(erased, optlrc_matrix_local, local, r+1, blocksize);
-	    erasure++;
-	 }
-	return 0;
-}	
+    }
+        optlrc_decode_local(erased, optlrc_matrix_local, &local[0], r+1, blocksize);
+    /*for (unsigned int i = 0; i < n; i++)
+        dout(0) << __func__ << " lost " << want_to_read << " 1post decode size of " << i << " is " <<  (*decoded)[i].length() << dendl;
+    for (unsigned int i = 0; i < 20; i++) {
+        dout(0) << __func__ << " post lost " << want_to_read << " m  " << 8 << " local[m][i] " <<  (*decoded)[erased][i] << dendl;
+    }
 
+    for (unsigned int i = 0; i < n; i++)
+        dout(0) << __func__ << " lost " << want_to_read << " post decode size of " << i << " is " <<  (*decoded)[i].length() << dendl;*/
+            erasures_init--;
 
+    }
+
+        if (erasures_init > 0) {
+    derr << __func__ << " want to read " << want_to_read
+	 << " end up being unable to read " << erasures_init << dendl;
+    return -EIO;
+        } else
+	        return 0;
+}
