@@ -1,4 +1,4 @@
-// -*- mode:C++; tab-width:8; c-basic-offset:2; indent-tabs-mode:t -*- 
+// -*- mode:C++; tab-width:8; c-basic-offset:2; indent-tabs-mode:t -*-
 // vim: ts=8 sw=2 smarttab
 /*
  * Ceph distributed storage system
@@ -12,7 +12,7 @@
  *  modify it under the terms of the GNU Lesser General Public
  *  License as published by the Free Software Foundation; either
  *  version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  */
 
 #include "common/debug.h"
@@ -89,7 +89,7 @@ int ErasureCodeJerasure::parse(ErasureCodeProfile &profile,
     chunk_mapping.clear();
     err = -EINVAL;
   }
-  err |= sanity_check_k(k, ss);
+  //err |= sanity_check_k(k, ss);
   return err;
 }
 
@@ -101,7 +101,7 @@ unsigned int ErasureCodeJerasure::get_chunk_size(unsigned int object_size) const
     if (object_size % k)
       chunk_size++;
     dout(20) << "get_chunk_size: chunk_size " << chunk_size
-	     << " must be modulo " << alignment << dendl; 
+	     << " must be modulo " << alignment << dendl;
     assert(alignment <= chunk_size);
     unsigned modulo = chunk_size % alignment;
     if (modulo) {
@@ -168,7 +168,7 @@ bool ErasureCodeJerasure::is_prime(int value)
   return false;
 }
 
-// 
+//
 // ErasureCodeJerasureReedSolomonVandermonde
 //
 void ErasureCodeJerasureReedSolomonVandermonde::jerasure_encode(char **data,
@@ -221,7 +221,7 @@ void ErasureCodeJerasureReedSolomonVandermonde::prepare()
   matrix = reed_sol_vandermonde_coding_matrix(k, m, w);
 }
 
-// 
+//
 // ErasureCodeJerasureReedSolomonRAID6
 //
 void ErasureCodeJerasureReedSolomonRAID6::jerasure_encode(char **data,
@@ -272,7 +272,7 @@ void ErasureCodeJerasureReedSolomonRAID6::prepare()
   matrix = reed_sol_r6_coding_matrix(k, w);
 }
 
-// 
+//
 // ErasureCodeJerasureCauchy
 //
 void ErasureCodeJerasureCauchy::jerasure_encode(char **data,
@@ -305,7 +305,7 @@ unsigned ErasureCodeJerasureCauchy::get_alignment() const
     if ( ((w*packetsize*sizeof(int))%LARGEST_VECTOR_WORDSIZE) )
       alignment = k*w*packetsize*LARGEST_VECTOR_WORDSIZE;
     return alignment;
-  }  
+  }
 }
 
 int ErasureCodeJerasureCauchy::parse(ErasureCodeProfile &profile,
@@ -324,7 +324,7 @@ void ErasureCodeJerasureCauchy::prepare_schedule(int *matrix)
   schedule = jerasure_smart_bitmatrix_to_schedule(k, m, w, bitmatrix);
 }
 
-// 
+//
 // ErasureCodeJerasureCauchyOrig
 //
 void ErasureCodeJerasureCauchyOrig::prepare()
@@ -334,7 +334,7 @@ void ErasureCodeJerasureCauchyOrig::prepare()
   free(matrix);
 }
 
-// 
+//
 // ErasureCodeJerasureCauchyGood
 //
 void ErasureCodeJerasureCauchyGood::prepare()
@@ -344,7 +344,7 @@ void ErasureCodeJerasureCauchyGood::prepare()
   free(matrix);
 }
 
-// 
+//
 // ErasureCodeJerasureLiberation
 //
 ErasureCodeJerasureLiberation::~ErasureCodeJerasureLiberation()
@@ -462,12 +462,12 @@ void ErasureCodeJerasureLiberation::prepare()
   schedule = jerasure_smart_bitmatrix_to_schedule(k, m, w, bitmatrix);
 }
 
-// 
+//
 // ErasureCodeJerasureBlaumRoth
 //
 bool ErasureCodeJerasureBlaumRoth::check_w(ostream *ss) const
 {
-  // back in Firefly, w = 7 was the default and produced useable 
+  // back in Firefly, w = 7 was the default and produced useable
   // chunks. Tolerate this value for backward compatibility.
   if (w == 7)
     return true;
@@ -486,7 +486,7 @@ void ErasureCodeJerasureBlaumRoth::prepare()
   schedule = jerasure_smart_bitmatrix_to_schedule(k, m, w, bitmatrix);
 }
 
-// 
+//
 // ErasureCodeJerasureLiber8tion
 //
 int ErasureCodeJerasureLiber8tion::parse(ErasureCodeProfile &profile,
