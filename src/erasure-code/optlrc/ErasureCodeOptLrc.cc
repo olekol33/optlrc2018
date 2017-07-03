@@ -145,9 +145,12 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
         OptLRC_Configs optlrc_configs;
         POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
         set<int> failed_groups;
+        set<int> erasures_want;
         for (unsigned int i = 0; i < get_chunk_count(); ++i) {
           if (available_chunks.count(i) == 0) {
             erasures_total.insert(i);
+	  if (want_to_read.count(i) != 0)
+	    erasures_want.insert(i);
           }
         }
     //
@@ -156,7 +159,7 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
     // When no chunk is missing there is no need to read more than what
     // is wanted.
     //
-    if (erasures_total.empty()) {
+    if (erasures_want.empty()) {
       *minimum = want_to_read;
       dout(0) << __func__ << " Nothing missing - want_to_read == "
 	       << want_to_read << dendl;
@@ -164,8 +167,8 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
     }
 
     //check to which group the failed node belongs, optlrc_perm points to the real symbol location
-    for (set<int>::iterator it = erasures_total.begin(); it != erasures_total.end(); ++it) {
-            if (failed_groups.count(pOptLRC_G->optlrc_perm[*it] /(r+1)) >1 ) {
+    for (set<int>::iterator it = erasures_want.begin(); it != erasures_want.end(); ++it) {
+            if (failed_groups.count(pOptLRC_G->optlrc_perm[*it] /(r+1)) == 1 ) {
                         dout(0) << __func__ << " twice failed in the same group "
                                  << pOptLRC_G->optlrc_perm[*it] /(r+1) << dendl;
                         return -EIO;
@@ -180,14 +183,15 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
     //
     for (set<int>::iterator it1 = failed_groups.begin(); it1 != failed_groups.end(); ++it1){
         for (set<int>::iterator it2 = available_chunks.begin(); it2 != available_chunks.end(); ++it2){
-            //
+            //if chunk is available and in required group - add to minimum
 		if ((pOptLRC_G->optlrc_perm[*it2] / (r+1)) == *it1 )
                 	minimum->insert(*it2);
         }
     }
+    }
+    dout(0) << __func__ << " failed_groups = " << failed_groups << dendl;
     dout(0) << __func__ << " minimum = " << *minimum << dendl;
     return 0;
-    }
 
 }
 
@@ -216,6 +220,7 @@ int ErasureCodeOptLrc::optlrc_decode_local(const int erased, int *matrix, char *
 			init=1;
 		}
 	}
+        free(dst);
 	return 0;
 }
 
@@ -224,6 +229,7 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
 				       map<int, bufferlist> *decoded)
 {
 	int blocksize = (*chunks.begin()).second.length();
+        dout(0) << __func__ << " decodeblocksize " << blocksize << dendl;
 	int erasure=0;
 	int erasures_count = 0;
 	//int erasures_count = 0;
@@ -264,6 +270,10 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
         	}
         }
         optlrc_decode_local(erased, optlrc_matrix_local, &local[0], r+1, blocksize);
+        //reset in case more than 1 erasure
+        m=0;
+    //for (unsigned int i = 0; i < 10; i++)
+    //    dout(0) << __func__ << " lost " << erased << " content of i= " << i << " is " <<  (*decoded)[erased][i] << dendl;
             erasures_init--;
     }
     /*for (unsigned int i = 0; i < n; i++)
