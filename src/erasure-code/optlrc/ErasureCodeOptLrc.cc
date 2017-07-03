@@ -100,7 +100,6 @@ int ErasureCodeOptLrc::parse(ErasureCodeProfile &profile,
     err = -EINVAL;
   }
   err |= sanity_check_k(k, ss);
-  //dout(0) << __func__ << " parse done" << dendl;
   return err;
 }
 
@@ -207,14 +206,13 @@ int ErasureCodeOptLrc::optlrc_decode_local(const int erased, int *matrix, char *
 	for (int i=0;i<group_size;i++) {
 		coef_mat[i] = galois_single_divide(pOptLRC_G->optlrc_coef[group][i],
 				pOptLRC_G->optlrc_coef[group][loc_erased],8);
-    	dout(0) << __func__ << " erase = " << erased << " coef_mat = " << coef_mat[i] << dendl;
 	}
 	for (int i=0;i<group_size;i++){
 		if (i!=loc_erased){
 			char *src = decoded[i];
 			//galois_w08_region_multiply(src, coef_mat[i], blocksize, dst, init);
 			galois_w08_region_multiply(src, coef_mat[i], blocksize, decoded[loc_erased], init);
-    	dout(0) << __func__ << " blocksize = " << blocksize << dendl;
+    	dout(0) << __func__ << " erase = " << erased<< " blocksize = " << blocksize << dendl;
 			init=1;
 		}
 	}
@@ -237,17 +235,6 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
 	set<int> used_data;
 	OptLRC_Configs optlrc_configs;
 	POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
-    /*for (unsigned int i = 0; i < n; i++) {
-        if (chunks.find(i) == chunks.end()) {
-            bufferptr ptr(buffer::create_aligned(blocksize, SIMD_ALIGN));
-            ptr.zero();
-            (*decoded)[i].push_front(ptr);
-
-        } else {
-            (*decoded)[i] = chunks.find(i)->second;
-            (*decoded)[i].rebuild_aligned(SIMD_ALIGN);
-        }
-    }*/
 
         int erasures_init = erasures_count;
 	int m=0;
@@ -255,9 +242,11 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
 	int *optlrc_matrix_local = talloc(int, (r+1)*k);
 	//for (int f=0; f<erasures_count; ++f )
         erasures_count=want_to_read.size();
+    for (unsigned int i = 0; i < n; i++)
+        dout(0) << __func__ << " lost " << want_to_read << " 1post decode size of " << i << " is " <<  (*decoded)[i].length() << dendl;
 
         for (set<int>::iterator it = want_to_read.begin(); it != want_to_read.end(); ++it) {
-        dout(0) << __func__ << " reconstructing " << *it << dendl;
+        dout(0) << __func__ << " reconstructing " << *it << " of want_to_read = " << want_to_read << dendl;
 		int erased = *it;
 		//calculate failed group from real location
 	    failed_group = pOptLRC_G->optlrc_perm[erased] /(r+1);

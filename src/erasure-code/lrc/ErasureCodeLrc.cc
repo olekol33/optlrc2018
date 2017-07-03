@@ -558,7 +558,7 @@ int ErasureCodeLrc::minimum_to_decode(const set<int> &want_to_read,
 				      const set<int> &available_chunks,
 				      set<int> *minimum)
 {
-  dout(20) << __func__ << " want_to_read " << want_to_read
+  dout(0) << __func__ << " want_to_read " << want_to_read
 	   << " available_chunks " << available_chunks << dendl;
   {
     set<int> erasures_total;
@@ -581,7 +581,7 @@ int ErasureCodeLrc::minimum_to_decode(const set<int> &want_to_read,
     //
     if (erasures_want.empty()) {
       *minimum = want_to_read;
-      dout(20) << __func__ << " minimum == want_to_read == "
+      dout(0) << __func__ << " minimum == want_to_read == "
 	       << want_to_read << dendl;
       return 0;
     }
@@ -675,7 +675,7 @@ int ErasureCodeLrc::minimum_to_decode(const set<int> &want_to_read,
 	if (minimum->count(*i))
 	  minimum->erase(*i);
       }
-      dout(20) << __func__ << " minimum = " << *minimum << dendl;
+      dout(0) << __func__ << " minimum = " << *minimum << dendl;
       return 0;
     }
   }
@@ -729,7 +729,7 @@ int ErasureCodeLrc::minimum_to_decode(const set<int> &want_to_read,
       // recover, use all available chunks.
       //
       *minimum = available_chunks;
-      dout(20) << __func__ << " minimum == available_chunks == "
+      dout(0) << __func__ << " minimum == available_chunks == "
 	       << available_chunks << dendl;
       return 0;
     }
