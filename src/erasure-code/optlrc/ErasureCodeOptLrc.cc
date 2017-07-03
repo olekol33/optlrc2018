@@ -189,7 +189,6 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
         }
     }
     }
-    dout(0) << __func__ << " failed_groups = " << failed_groups << dendl;
     dout(0) << __func__ << " minimum = " << *minimum << dendl;
     return 0;
 
