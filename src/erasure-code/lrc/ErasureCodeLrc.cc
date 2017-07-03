@@ -639,10 +639,18 @@ int ErasureCodeLrc::minimum_to_decode(const set<int> &want_to_read,
 			 inserter(layer_minimum, layer_minimum.end()));*/
           //OK: My fix
           set<int> layer_maximum;
-          set_difference(i->chunks_as_set.begin(),
-          i             i->chunks_as_set.end(),
+          set_difference(i->chunks_as_set.begin(), i->chunks_as_set.end(),
                         erasures_not_recovered.begin(),erasures_not_recovered.end(),
                         inserter(layer_maximum,layer_maximum.end()));
+          unsigned int k=0;
+          for (unsigned int j = 0; j < get_chunk_count(); ++j) {
+              if (layer_maximum.count(j) != 0) {
+                  k++;
+                  layer_minimum.insert(j);
+                  if ( k == i->erasure_code->get_data_chunk_count() )
+                              break;
+              }
+          }
 	  //
 	  // Chunks recovered by this layer are removed from the list of
 	  // erasures so that upper levels do not attempt to recover
