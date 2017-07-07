@@ -40,6 +40,25 @@ optlrc_coef: {
 	{214,215,1},
 	{1,214,215}
 }
+};
+
+struct OptLRC optlrc_8_3_2 = {
+optlrc_encode : {
+        {1, 0, 0},
+        {0, 1, 0},
+        {0, 0, 1},
+        {214,215,0},
+        {1,1,1},
+        {215,215,1},
+        {34,214,245},
+        {34,214,245}
+},
+optlrc_perm : {0,1,3,2,4,5,6,7},
+optlrc_coef: {
+	{214,215,1},
+	{1,214,215},
+	{1,1}
+}
 
 
 
@@ -56,6 +75,7 @@ typedef struct OptLRC_Configs
          * Locality
          */
         configs[9][4][2]  =  &optlrc_9_4_2;
+        configs[8][3][2]  =  &optlrc_8_3_2;
     }
 } OptLRC_Configs, *POptLRC_Configs;
 
