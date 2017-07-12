@@ -119,10 +119,10 @@ void ErasureCodeOptLrc::optlrc_encode(char **data, char **coding, int blocksize)
 	OptLRC_Configs optlrc_configs;
 	POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
 	int *matrix = talloc(int, (n-k)*k);
-	  if (matrix == NULL) {
-	    free(matrix);
-	    std::exit(0);
-	  }
+	if (matrix == NULL) {
+	  free(matrix);
+	  std::exit(0);
+	}
 	for (int i=0 ; i < n-k ; i++) {
 		for (int j=0 ; j<k; j++) {
 			matrix[i*k+j]= pOptLRC_G->optlrc_encode[i+k][j];
@@ -141,14 +141,14 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
   dout(0) << __func__ << " want_to_read " << want_to_read
 	   << " available_chunks " << available_chunks << dendl;
 
-        set<int> erasures_total;
+        //set<int> erasures_total;
         OptLRC_Configs optlrc_configs;
         POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
         set<int> failed_groups;
         set<int> erasures_want;
         for (unsigned int i = 0; i < get_chunk_count(); ++i) {
           if (available_chunks.count(i) == 0) {
-            erasures_total.insert(i);
+            //erasures_total.insert(i);
 	  if (want_to_read.count(i) != 0)
 	    erasures_want.insert(i);
           }
@@ -197,7 +197,6 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
 int ErasureCodeOptLrc::optlrc_decode_local(const int erased, int *matrix, char *decoded[], int group_size, int blocksize) {
 
 	int coef_mat[r+1];
-	//long = result;
 	char *dst = talloc(char, blocksize);
 	int init=0;
 	OptLRC_Configs optlrc_configs;
@@ -206,16 +205,15 @@ int ErasureCodeOptLrc::optlrc_decode_local(const int erased, int *matrix, char *
 	int group = pOptLRC_G->optlrc_perm[erased] / (r+1);
 
     //normalize coefficients by lost chunk coefficient
-	for (int i=0;i<group_size;i++) {
+	/*for (int i=0;i<group_size;i++) {
 		coef_mat[i] = galois_single_divide(pOptLRC_G->optlrc_coef[group][i],
 				pOptLRC_G->optlrc_coef[group][loc_erased],8);
-	}
+	}*/
 	for (int i=0;i<group_size;i++){
 		if (i!=loc_erased){
 			char *src = decoded[i];
-			//galois_w08_region_multiply(src, coef_mat[i], blocksize, dst, init);
-			galois_w08_region_multiply(src, coef_mat[i], blocksize, decoded[loc_erased], init);
-    	dout(0) << __func__ << " erase = " << erased<< " blocksize = " << blocksize << dendl;
+                        galois_region_xor(src,decoded[loc_erased],blocksize);
+			//galois_w08_region_multiply(src, coef_mat[i], blocksize, decoded[loc_erased], init);
 			init=1;
 		}
 	}
@@ -228,61 +226,48 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
 				       map<int, bufferlist> *decoded)
 {
 	int blocksize = (*chunks.begin()).second.length();
-        dout(0) << __func__ << " decodeblocksize " << blocksize << dendl;
-	int erasure=0;
-	int erasures_count = 0;
+	//int erasure=0;
 	//int erasures_count = 0;
-	char *data[k];
-	char *coding[n-k];
+	//int erasures_count = 0;
+	//char *data[k];
+	//char *coding[n-k];
 	char *local[r+1];
 	int failed_group;
-	int loc_erased;
-	set<int> used_data;
+	//int loc_erased;
+	//set<int> used_data;
 	OptLRC_Configs optlrc_configs;
 	POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
-
-        int erasures_init = erasures_count;
+        int erasures_init;
+        //int erasures_init = erasures_count;
 	int m=0;
 	// k failed chunks at max, (r+1)*k matrix for each
 	int *optlrc_matrix_local = talloc(int, (r+1)*k);
 	//for (int f=0; f<erasures_count; ++f )
-        erasures_count=want_to_read.size();
-    for (unsigned int i = 0; i < n; i++)
-        dout(0) << __func__ << " lost " << want_to_read << " 1post decode size of " << i << " is " <<  (*decoded)[i].length() << dendl;
+        erasures_init=want_to_read.size();
 
         for (set<int>::iterator it = want_to_read.begin(); it != want_to_read.end(); ++it) {
-        dout(0) << __func__ << " reconstructing " << *it << " of want_to_read = " << want_to_read << dendl;
-		int erased = *it;
-		//calculate failed group from real location
-	    failed_group = pOptLRC_G->optlrc_perm[erased] /(r+1);
-	//TODO: adjust for arbitrary code length
-        for (int i=0;i<n;i++){
-        	//find rest of failed group from real location
-        	if ((pOptLRC_G->optlrc_perm[i] / (r+1)) == failed_group) {
-        		//collect local group
-        		local[m] = (*decoded)[i].c_str();
-                        for (int j=0; j<k; j++) {
-        			optlrc_matrix_local[m*k + j] = pOptLRC_G->optlrc_encode[i][j];
+	        int erased = *it;
+	        //calculate failed group from real location
+	        failed_group = pOptLRC_G->optlrc_perm[erased] /(r+1);
+	        //TODO: adjust for arbitrary code length
+                for (int i=0;i<n;i++){
+                	//find rest of failed group from real location
+                	if ((pOptLRC_G->optlrc_perm[i] / (r+1)) == failed_group) {
+                                m= pOptLRC_G->optlrc_perm[i] % (r+1);
+                		//collect local group
+                		local[m] = (*decoded)[i].c_str();
+                                for (int j=0; j<k; j++) {
+                			optlrc_matrix_local[m*k + j] = pOptLRC_G->optlrc_encode[i][j];
 
-        		}
-        		m++;
-        	}
+                		}
+                		//m++;
+                	}
+                }
+                optlrc_decode_local(erased, optlrc_matrix_local, &local[0], r+1, blocksize);
+                //reset in case more than 1 erasure
+                m=0;
+                erasures_init--;
         }
-        optlrc_decode_local(erased, optlrc_matrix_local, &local[0], r+1, blocksize);
-        //reset in case more than 1 erasure
-        m=0;
-    //for (unsigned int i = 0; i < 10; i++)
-    //    dout(0) << __func__ << " lost " << erased << " content of i= " << i << " is " <<  (*decoded)[erased][i] << dendl;
-            erasures_init--;
-    }
-    /*for (unsigned int i = 0; i < n; i++)
-        dout(0) << __func__ << " lost " << want_to_read << " 1post decode size of " << i << " is " <<  (*decoded)[i].length() << dendl;
-    for (unsigned int i = 0; i < 20; i++) {
-        dout(0) << __func__ << " post lost " << want_to_read << " m  " << 8 << " local[m][i] " <<  (*decoded)[erased][i] << dendl;
-    }
-
-    for (unsigned int i = 0; i < n; i++)
-        dout(0) << __func__ << " lost " << want_to_read << " post decode size of " << i << " is " <<  (*decoded)[i].length() << dendl;*/
 
         if (erasures_init > 0) {
     derr << __func__ << " want to read " << want_to_read

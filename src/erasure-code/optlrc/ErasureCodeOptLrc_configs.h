@@ -9,7 +9,7 @@
 #define OPTLRC_CONFIGS_HPP_
 
 #define MAX_DATA_CHUNKS     16
-#define MAX_CHUNKS  20 
+#define MAX_CHUNKS  20
 #define MAX_LOCALITY_CHUNKS   8
 #define MAX_MATRIX          256
 #define MAX_OPTLRC_CHUNKS   4
@@ -22,7 +22,7 @@ typedef struct OptLRC {
 
 } OptLRC, *POptLRC;
 
-struct OptLRC optlrc_9_4_2 = {
+/*struct OptLRC optlrc_9_4_2 = {
 optlrc_encode : {
         {1, 0, 0, 0},
         {0, 1, 0, 0},
@@ -39,6 +39,50 @@ optlrc_coef: {
 	{214,215,1},
 	{214,215,1},
 	{1,214,215}
+}
+};*/
+
+struct OptLRC optlrc_9_4_2 = {
+optlrc_encode : {
+{1, 0, 0, 0},
+{0, 1, 0, 0},
+{0, 0, 1, 0},
+{0, 0, 0, 1},
+{1, 0, 0, 1},
+{3, 2, 176, 102},
+{101, 178, 2, 3},
+{102, 176, 178, 101},
+{0, 1, 1, 0}
+},
+optlrc_perm : {5,7,6,3,4,0,2,1,8},
+optlrc_coef : {
+{1,1,1},
+{1,1,1},
+{1,1,1}
+}
+};
+
+struct OptLRC optlrc_12_6_3 = {
+optlrc_encode : {
+        {1, 0, 0, 0, 0, 0},
+        {0, 1, 0, 0, 0, 0},
+        {0, 0, 1, 0, 0, 0},
+        {0, 0, 0, 1, 0, 0},
+        {0, 0, 0, 0, 1, 0},
+        {0, 0, 0, 0, 0, 1},
+        {1, 1, 1, 0, 0, 0},
+        {0, 0, 0, 1, 1, 1},
+        {168,114,188,55,31,79},
+		{206,20,188,80,120,79},
+		{206,114,218,80,31,40},
+        {168,20,218,55,120,40}
+
+},
+optlrc_perm : {0,1,2,4,5,6,3,7,8,9,10,11},
+optlrc_coef: {
+	{1,1,1,1},
+	{1,1,1,1},
+	{1,1,1,1}
 }
 };
 
@@ -59,9 +103,6 @@ optlrc_coef: {
 	{1,214,215},
 	{1,1}
 }
-
-
-
 };
 
 typedef struct OptLRC_Configs
@@ -76,9 +117,8 @@ typedef struct OptLRC_Configs
          */
         configs[9][4][2]  =  &optlrc_9_4_2;
         configs[8][3][2]  =  &optlrc_8_3_2;
+        configs[12][6][3]  =  &optlrc_12_6_3;
     }
 } OptLRC_Configs, *POptLRC_Configs;
 
 #endif /* OPTLRC_CONFIGS_HPP_ */
-
-
