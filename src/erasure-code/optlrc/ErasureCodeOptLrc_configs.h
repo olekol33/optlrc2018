@@ -121,8 +121,9 @@ typedef struct OptLRC_Configs
          * Locality
          */
         configs[9][4][2]  =  &optlrc_9_4_2;
-        configs[8][3][2]  =  &optlrc_8_3_2;
-        configs[12][6][3]  =  &optlrc_12_6_3;
+        configs[10][6][4]  =  &optlrc_10_6_4;
+        configs[10][6][3]  =  &optlrc_10_6_3;
+        configs[15][8][4]  =  &optlrc_15_8_4;
     }
 } OptLRC_Configs, *POptLRC_Configs;
 
