@@ -141,14 +141,14 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
   dout(0) << __func__ << " want_to_read " << want_to_read
 	   << " available_chunks " << available_chunks << dendl;
 
-        //set<int> erasures_total;
+        set<int> erasures_total;
         OptLRC_Configs optlrc_configs;
         POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
         set<int> failed_groups;
         set<int> erasures_want;
         for (unsigned int i = 0; i < get_chunk_count(); ++i) {
           if (available_chunks.count(i) == 0) {
-            //erasures_total.insert(i);
+            erasures_total.insert(i);
 	  if (want_to_read.count(i) != 0)
 	    erasures_want.insert(i);
           }
@@ -161,7 +161,7 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
     //
     if (erasures_want.empty()) {
       *minimum = want_to_read;
-      dout(0) << __func__ << " Nothing missing - want_to_read == "
+      dout(0) << __func__ << " minimum == want_to_read == "
 	       << want_to_read << dendl;
       return 0;
     }
@@ -188,6 +188,14 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
                 	minimum->insert(*it2);
         }
     }
+    }
+
+    minimum->insert(want_to_read.begin(), want_to_read.end());
+    for (set<int>::const_iterator i = erasures_total.begin();
+	i != erasures_total.end();
+	++i) {
+        if (minimum->count(*i))
+            minimum->erase(*i);
     }
     dout(0) << __func__ << " minimum = " << *minimum << dendl;
     return 0;
