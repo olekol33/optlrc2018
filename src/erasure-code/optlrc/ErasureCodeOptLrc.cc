@@ -27,8 +27,6 @@ using namespace std;
 #define dout_prefix _prefix(_dout)
 #define BASIC_BLOCK_SIZE 67108864
 #define talloc(type, num) (type *) malloc(sizeof(type)*(num))
-//OptLRC_Configs optlrc_configs;
-//POptLRC pOptLRC_G = optlrc_configs.configs[ErasureCodeOptLrc::n][ErasureCodeOptLrc::k][ErasureCodeOptLrc::r];
 
 static ostream& _prefix(std::ostream* _dout)
 {
@@ -80,7 +78,6 @@ int ErasureCodeOptLrc::init(ErasureCodeProfile& profile, ostream *ss)
   err |= parse(profile, ss);
   if (err)
     return err;
-  //prepare();
   ErasureCode::init(profile, ss);
   return err;
 }
@@ -172,7 +169,6 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
                         dout(0) << __func__ << " twice failed in the same group "
                                  << pOptLRC_G->optlrc_perm[*it] /(r+1) << dendl;
                         return -EIO;
-                        //return 0;
         }
         failed_groups.insert( pOptLRC_G->optlrc_perm[*it] /(r+1));
 
@@ -204,13 +200,13 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
 
 int ErasureCodeOptLrc::optlrc_decode_local(const int erased, int *matrix, char **decoded, int group_size, int blocksize) {
 
-	int coef_mat[r+1];
-	char *dst = talloc(char, blocksize);
-	int init=0;
+	//int coef_mat[r+1];
+	//char *dst = talloc(char, blocksize);
+	//int init=0;
 	OptLRC_Configs optlrc_configs;
 	POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
 	int loc_erased = pOptLRC_G->optlrc_perm[erased] % (r+1);
-	int group = pOptLRC_G->optlrc_perm[erased] / (r+1);
+	//int group = pOptLRC_G->optlrc_perm[erased] / (r+1);
 
     //normalize coefficients by lost chunk coefficient
 	/*for (int i=0;i<group_size;i++) {
@@ -222,10 +218,10 @@ int ErasureCodeOptLrc::optlrc_decode_local(const int erased, int *matrix, char *
 			char *src = decoded[i];
                         galois_region_xor(src,decoded[loc_erased],blocksize);
 			//galois_w08_region_multiply(src, coef_mat[i], blocksize, decoded[loc_erased], init);
-			init=1;
+			//init=1;
 		}
 	}
-        free(dst);
+        //free(dst);
 	return 0;
 }
 
