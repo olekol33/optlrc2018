@@ -202,7 +202,7 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
 
 }
 
-int ErasureCodeOptLrc::optlrc_decode_local(const int erased, int *matrix, char *decoded[], int group_size, int blocksize) {
+int ErasureCodeOptLrc::optlrc_decode_local(const int erased, int *matrix, char **decoded, int group_size, int blocksize) {
 
 	int coef_mat[r+1];
 	char *dst = talloc(char, blocksize);
@@ -234,26 +234,34 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
 				       map<int, bufferlist> *decoded)
 {
 	int blocksize = (*chunks.begin()).second.length();
-	//int erasure=0;
-	//int erasures_count = 0;
-	//int erasures_count = 0;
-	//char *data[k];
-	//char *coding[n-k];
 	char *local[r+1];
 	int failed_group;
-	//int loc_erased;
-	//set<int> used_data;
 	OptLRC_Configs optlrc_configs;
 	POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
-        int erasures_init;
-        //int erasures_init = erasures_count;
 	int m=0;
 	// k failed chunks at max, (r+1)*k matrix for each
 	int *optlrc_matrix_local = talloc(int, (r+1)*k);
-	//for (int f=0; f<erasures_count; ++f )
-        erasures_init=want_to_read.size();
 
-        for (set<int>::iterator it = want_to_read.begin(); it != want_to_read.end(); ++it) {
+        //set<int> available_chunks;
+        set<int> erasures;
+        for (unsigned int i = 0; i < get_chunk_count(); ++i) {
+          if (chunks.count(i) == 0){
+          //  available_chunks.insert(i);
+          //}
+          //else
+          //{
+            //  dout(0) << "i is erased : " << i << " decoded value is " << strlen((*decoded)[i].c_str()) << dendl;
+            //erasures.insert(i);
+              if (want_to_read.count(i) != 0)
+                      erasures.insert(i);
+
+          }
+        }
+        int erasures_init=erasures.size();
+
+        //for (set<int>::iterator it = want_to_read.begin(); it != want_to_read.end(); ++it) {
+        for (set<int>::iterator it = erasures.begin(); it != erasures.end(); ++it) {
+                int group_size = 0;
 	        int erased = *it;
 	        //calculate failed group from real location
 	        failed_group = pOptLRC_G->optlrc_perm[erased] /(r+1);
@@ -261,6 +269,7 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
                 for (int i=0;i<n;i++){
                 	//find rest of failed group from real location
                 	if ((pOptLRC_G->optlrc_perm[i] / (r+1)) == failed_group) {
+                                group_size++;
                                 m= pOptLRC_G->optlrc_perm[i] % (r+1);
                 		//collect local group
                 		local[m] = (*decoded)[i].c_str();
@@ -271,7 +280,8 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
                 		//m++;
                 	}
                 }
-                optlrc_decode_local(erased, optlrc_matrix_local, &local[0], r+1, blocksize);
+                //optlrc_decode_local(erased, optlrc_matrix_local, &local[0], r+1, blocksize);
+                optlrc_decode_local(erased, optlrc_matrix_local, local, group_size, blocksize);
                 //reset in case more than 1 erasure
                 m=0;
                 erasures_init--;

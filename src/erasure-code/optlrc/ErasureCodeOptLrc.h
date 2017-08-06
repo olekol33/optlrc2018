@@ -46,7 +46,7 @@ unsigned int get_chunk_size(unsigned int object_size) const override ;
 int encode_chunks(const std::set<int> &want_to_encode,
       	    std::map<int, bufferlist> *encoded) override;
 int optlrc_decode_local(const int erased, int *matrix,
-				char *decoded[], int group_size, int blocksize);
+				char **decoded, int group_size, int blocksize);
 
 int decode_chunks(const std::set<int> &want_to_read,
 			    const std::map<int, bufferlist> &chunks,
