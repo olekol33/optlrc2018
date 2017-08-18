@@ -58,7 +58,7 @@ unsigned int ErasureCodeOptLrc::get_chunk_size(unsigned int object_size) const
 
     unsigned int modulo = chunk_size % alignment;
     if (modulo) {
-    dout(0) << __func__ << "get_chunk_size: " << chunk_size
+    dout(20) << __func__ << "get_chunk_size: " << chunk_size
              << " padded to " << chunk_size + alignment - modulo << dendl;
         chunk_size += alignment - modulo;
     }
@@ -135,7 +135,7 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
 				      const set<int> &available_chunks,
 				      set<int> *minimum)
 {
-  dout(0) << __func__ << " want_to_read " << want_to_read
+  dout(20) << __func__ << " want_to_read " << want_to_read
 	   << " available_chunks " << available_chunks << dendl;
 
         set<int> erasures_total;
@@ -158,7 +158,7 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
     //
     if (erasures_want.empty()) {
       *minimum = want_to_read;
-      dout(0) << __func__ << " minimum == want_to_read == "
+      dout(20) << __func__ << " minimum == want_to_read == "
 	       << want_to_read << dendl;
       return 0;
     }
@@ -166,7 +166,7 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
     //check to which group the failed node belongs, optlrc_perm points to the real symbol location
     for (set<int>::iterator it = erasures_want.begin(); it != erasures_want.end(); ++it) {
             if (failed_groups.count(pOptLRC_G->optlrc_perm[*it] /(r+1)) == 1 ) {
-                        dout(0) << __func__ << " twice failed in the same group "
+                        dout(20) << __func__ << " twice failed in the same group "
                                  << pOptLRC_G->optlrc_perm[*it] /(r+1) << dendl;
                         return -EIO;
         }
@@ -193,7 +193,8 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
         if (minimum->count(*i))
             minimum->erase(*i);
     }
-    dout(0) << __func__ << " minimum = " << *minimum << dendl;
+    dout(20) << __func__ << " minimum = " << *minimum << dendl;
+    dout(0) << __func__ << " want_to_read = " << want_to_read.size() << " minimum = " << minimum.size() << dendl;
     return 0;
 
 }
