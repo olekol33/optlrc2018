@@ -58,7 +58,7 @@ unsigned int ErasureCodeOptLrc::get_chunk_size(unsigned int object_size) const
 
     unsigned int modulo = chunk_size % alignment;
     if (modulo) {
-    dout(10) << __func__ << "get_chunk_size: " << chunk_size
+    dout(1) << __func__ << "get_chunk_size: " << chunk_size
              << " padded to " << chunk_size + alignment - modulo << dendl;
         chunk_size += alignment - modulo;
     }
@@ -135,7 +135,7 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
 				      const set<int> &available_chunks,
 				      set<int> *minimum)
 {
-  dout(10) << __func__ << " want_to_read " << want_to_read
+  dout(1) << __func__ << " want_to_read " << want_to_read
 	   << " available_chunks " << available_chunks << dendl;
 
         set<int> erasures_total;
@@ -158,7 +158,7 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
     //
     if (erasures_want.empty()) {
       *minimum = want_to_read;
-      dout(10) << __func__ << " minimum == want_to_read == "
+      dout(1) << __func__ << " minimum == want_to_read == "
 	       << want_to_read << dendl;
       return 0;
     }
@@ -193,7 +193,7 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
         if (minimum->count(*i))
             minimum->erase(*i);
     }
-    dout(10) << __func__ << " minimum = " << *minimum << dendl;
+    dout(1) << __func__ << " minimum = " << *minimum << dendl;
     dout(0) << __func__ << " debug:want_to_read = " << want_to_read.size() << " minimum = " << minimum->size() << dendl;
     return 0;
 
