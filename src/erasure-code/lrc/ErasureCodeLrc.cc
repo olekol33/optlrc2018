@@ -497,7 +497,7 @@ int ErasureCodeLrc::init(ErasureCodeProfile &profile,
 
   string description_string = profile.find("layers")->second;
 
-  dout(100) << "init(" << description_string << ")" << dendl;
+  dout(10) << "init(" << description_string << ")" << dendl;
 
   r = layers_parse(description_string, description, ss);
   if (r)
