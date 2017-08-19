@@ -497,7 +497,7 @@ int ErasureCodeLrc::init(ErasureCodeProfile &profile,
 
   string description_string = profile.find("layers")->second;
 
-  dout(10) << "init(" << description_string << ")" << dendl;
+  dout(100) << "init(" << description_string << ")" << dendl;
 
   r = layers_parse(description_string, description, ss);
   if (r)
@@ -558,7 +558,7 @@ int ErasureCodeLrc::minimum_to_decode(const set<int> &want_to_read,
 				      const set<int> &available_chunks,
 				      set<int> *minimum)
 {
-  dout(1) << __func__ << " want_to_read " << want_to_read
+  dout(10) << __func__ << " want_to_read " << want_to_read
 	   << " available_chunks " << available_chunks << dendl;
   {
     set<int> erasures_total;
@@ -581,7 +581,7 @@ int ErasureCodeLrc::minimum_to_decode(const set<int> &want_to_read,
     //
     if (erasures_want.empty()) {
       *minimum = want_to_read;
-      dout(1) << __func__ << " minimum == want_to_read == "
+      dout(10) << __func__ << " minimum == want_to_read == "
 	       << want_to_read << dendl;
       return 0;
     }
@@ -675,7 +675,7 @@ int ErasureCodeLrc::minimum_to_decode(const set<int> &want_to_read,
 	if (minimum->count(*i))
 	  minimum->erase(*i);
       }
-      dout(1) << __func__ << " minimum = " << *minimum << dendl;
+      dout(10) << __func__ << " minimum = " << *minimum << dendl;
       dout(0) << __func__ << " debug:want_to_read = " << want_to_read.size() << " minimum = " << minimum->size() << dendl;
       return 0;
     }
@@ -730,7 +730,7 @@ int ErasureCodeLrc::minimum_to_decode(const set<int> &want_to_read,
       // recover, use all available chunks.
       //
       *minimum = available_chunks;
-      dout(1) << __func__ << " minimum == available_chunks == "
+      dout(10) << __func__ << " minimum == available_chunks == "
 	       << available_chunks << dendl;
       dout(0) << __func__ << " debug:want_to_read = " << want_to_read.size() << " minimum = " << minimum->size() << dendl;
       return 0;
