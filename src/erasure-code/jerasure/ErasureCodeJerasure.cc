@@ -137,7 +137,7 @@ int ErasureCodeJerasure::decode_chunks(const set<int> &want_to_read,
   int erasures_count = 0;
   char *data[k];
   char *coding[m];
-  dout(0) << __func__ << " debug:want_to_read = " << want_to_read.size() << " minimum = " << k << dendl;
+  dout(0) << __func__ << " minimum_to_decode debug:want_to_read = " << want_to_read.size() << " minimum = " << k << dendl;
   for (int i =  0; i < k + m; i++) {
     if (chunks.find(i) == chunks.end()) {
       erasures[erasures_count] = i;
