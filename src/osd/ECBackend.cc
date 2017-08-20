@@ -1548,8 +1548,8 @@ int ECBackend::get_min_avail_to_read_shards(
   }
 
   set<int> need;
-  dout(0) << __func__ << " minimum_to_decode: debug:want_to_read = " << want.size() << " minimum = " << minimum.size() << dendl;
   int r = ec_impl->minimum_to_decode(want, have, &need);
+  dout(0) << __func__ << " minimum_to_decode: debug:want_to_read = " << want.size() << " minimum = " << need.size() << dendl;
   if (r < 0)
     return r;
 
