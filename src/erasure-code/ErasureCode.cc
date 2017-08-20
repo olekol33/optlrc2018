@@ -1,4 +1,4 @@
-// -*- mode:C++; tab-width:8; c-basic-offset:2; indent-tabs-mode:t -*- 
+// -*- mode:C++; tab-width:8; c-basic-offset:2; indent-tabs-mode:t -*-
 // vim: ts=8 sw=2 smarttab
 /*
  * Ceph distributed storage system
@@ -12,18 +12,28 @@
  *  modify it under the terms of the GNU Lesser General Public
  *  License as published by the Free Software Foundation; either
  *  version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  */
 
 #include <errno.h>
 #include <algorithm>
 
 #include "ErasureCode.h"
+#include "common/debug.h"
 
 #include "common/strtol.h"
 #include "include/buffer.h"
+#define dout_context g_ceph_context
+#define dout_subsys ceph_subsys_osd
+#undef dout_prefix
+#define dout_prefix _prefix(_dout)
 
 using namespace std;
+
+static ostream& _prefix(std::ostream* _dout)
+{
+  return *_dout << "ErasureCode: ";
+}
 
 const unsigned ErasureCode::SIMD_ALIGN = 32;
 
@@ -58,6 +68,7 @@ int ErasureCode::minimum_to_decode(const set<int> &want_to_read,
     for (i = available_chunks.begin(), j = 0; j < (unsigned)k; ++i, j++)
       minimum->insert(*i);
   }
+  dout(0) << __func__ << " debug:want_to_read = " << want_to_read.size() << " minimum = " << minimum->size() << dendl;
   return 0;
 }
 
@@ -133,7 +144,7 @@ int ErasureCode::encode_chunks(const set<int> &want_to_encode,
 {
   assert("ErasureCode::encode_chunks not implemented" == 0);
 }
- 
+
 int ErasureCode::decode(const set<int> &want_to_read,
                         const map<int, bufferlist> &chunks,
                         map<int, bufferlist> *decoded)

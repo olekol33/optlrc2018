@@ -194,7 +194,7 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
             minimum->erase(*i);
     }
     dout(1) << __func__ << " minimum = " << *minimum << dendl;
-    //dout(0) << __func__ << " debug:want_to_read = " << want_to_read.size() << " minimum = " << minimum->size() << dendl;
+    dout(0) << __func__ << " debug:want_to_read = " << want_to_read.size() << " minimum = " << minimum->size() << dendl;
     return 0;
 
 }
