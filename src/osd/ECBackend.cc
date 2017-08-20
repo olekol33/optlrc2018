@@ -515,7 +515,7 @@ void ECBackend::dispatch_recovery_messages(RecoveryMessages &m, int priority)
 	    get_parent()->get_epoch(),
 	    replies)));
     get_parent()->queue_transaction(std::move(m.t));
-  } 
+  }
 
   if (m.reads.empty())
     return;
@@ -1348,7 +1348,7 @@ void ECBackend::filter_read_op(
 void ECBackend::check_recovery_sources(const OSDMapRef& osdmap)
 {
   set<ceph_tid_t> tids_to_filter;
-  for (map<pg_shard_t, set<ceph_tid_t> >::iterator 
+  for (map<pg_shard_t, set<ceph_tid_t> >::iterator
        i = shard_to_read_map.begin();
        i != shard_to_read_map.end();
        ) {
@@ -1466,7 +1466,7 @@ void ECBackend::submit_transaction(
   op->client_op = client_op;
   if (client_op)
     op->trace = client_op->pg_trace;
-  
+
   dout(10) << __func__ << ": op " << *op << " starting" << dendl;
   start_rmw(op, std::move(t));
   dout(10) << "onreadable_sync: " << op->on_local_applied_sync << dendl;
@@ -1548,13 +1548,14 @@ int ECBackend::get_min_avail_to_read_shards(
   }
 
   set<int> need;
+  dout(0) << __func__ << " minimum_to_decode: debug:want_to_read = " << want.size() << " minimum = " << minimum.size() << dendl;
   int r = ec_impl->minimum_to_decode(want, have, &need);
   if (r < 0)
     return r;
 
   if (do_redundant_reads) {
       need.swap(have);
-  } 
+  }
 
   if (!to_read)
     return 0;
@@ -2270,7 +2271,7 @@ void ECBackend::objects_read_and_reconstruct(
 
   set<int> want_to_read;
   get_want_to_read_shards(&want_to_read);
-    
+
   map<hobject_t, read_request_t> for_read_op;
   for (auto &&to_read: reads) {
     set<pg_shard_t> shards;
@@ -2304,7 +2305,6 @@ void ECBackend::objects_read_and_reconstruct(
     fast_read, false);
   return;
 }
-
 
 int ECBackend::send_all_remaining_reads(
   const hobject_t &hoid,
