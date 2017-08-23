@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <algorithm>
+#include <math.h>
 
 #include "ErasureCodeOptLrc.h"
 #include "ErasureCodeOptLrc_configs.h"
@@ -36,14 +37,66 @@ int ErasureCodeOptLrc::create_ruleset(const string &name,
 					CrushWrapper &crush,
 					ostream *ss) const
 {
-  int ruleid = crush.add_simple_ruleset(name, ruleset_root, ruleset_failure_domain,
-					"indep", pg_pool_t::TYPE_ERASURE, ss);
-  if (ruleid < 0)
-    return ruleid;
-  else {
-    crush.set_rule_mask_max_size(ruleid, get_chunk_count());
-    return crush.get_rule_mask_ruleset(ruleid);
+  if (crush.rule_exists(name)) {
+    *ss << "rule " << name << " exists";
+    return -EEXIST;
   }
+  if (!crush.name_exists(ruleset_root)) {
+    *ss << "root item " << ruleset_root << " does not exist";
+    return -ENOENT;
+  }
+  int root = crush.get_item_id(ruleset_root);
+
+  int ruleset = 0;
+  int rno = 0;
+  for (rno = 0; rno < crush.get_max_rules(); rno++) {
+    if (!crush.rule_exists(rno) && !crush.ruleset_exists(rno))
+       break;
+  }
+  ruleset = rno;
+
+  int steps = 4 + ruleset_steps.size();
+  int min_rep = 3;
+  int max_rep = get_chunk_count();
+  int ret;
+  ret = crush.add_rule(steps, ruleset, pg_pool_t::TYPE_ERASURE,
+		  min_rep, max_rep, rno);
+  assert(ret == rno);
+  int step = 0;
+
+  ret = crush.set_rule_step(rno, step++, CRUSH_RULE_SET_CHOOSELEAF_TRIES, 5, 0);
+  assert(ret == 0);
+  ret = crush.set_rule_step(rno, step++, CRUSH_RULE_SET_CHOOSE_TRIES, 100, 0);
+  assert(ret == 0);
+  ret = crush.set_rule_step(rno, step++, CRUSH_RULE_TAKE, root, 0);
+  assert(ret == 0);
+  // [ [ "choose", "rack", 2 ],
+  //   [ "chooseleaf", "host", 5 ] ]
+  for (vector<Step>::const_iterator i = ruleset_steps.begin();
+       i != ruleset_steps.end();
+       ++i) {
+    int op = i->op == "chooseleaf" ?
+      CRUSH_RULE_CHOOSELEAF_INDEP : CRUSH_RULE_CHOOSE_INDEP;
+    int type = crush.get_type_id(i->type);
+    if (type < 0) {
+      *ss << "unknown crush type " << i->type;
+      return -EINVAL;
+    }
+    ret = crush.set_rule_step(rno, step++, op, i->n, type);
+    assert(ret == 0);
+  }
+  ret = crush.set_rule_step(rno, step++, CRUSH_RULE_EMIT, 0, 0);
+  assert(ret == 0);
+  crush.set_rule_name(rno, name);
+  return ruleset;
+  //int ruleid = crush.add_simple_ruleset(name, ruleset_root, ruleset_failure_domain,
+  //      				"indep", pg_pool_t::TYPE_ERASURE, ss);
+  //if (ruleid < 0)
+  //  return ruleid;
+  //else {
+  //  crush.set_rule_mask_max_size(ruleid, get_chunk_count());
+  //  return crush.get_rule_mask_ruleset(ruleid);
+  //}
 }
 unsigned int ErasureCodeOptLrc::get_alignment() const
 {
@@ -69,12 +122,15 @@ int ErasureCodeOptLrc::init(ErasureCodeProfile& profile, ostream *ss)
 {
   int err = 0;
 
-  err |= to_string("ruleset-root", profile,
-		   &ruleset_root,
-		   DEFAULT_RULESET_ROOT, ss);
-  err |= to_string("ruleset-failure-domain", profile,
-		   &ruleset_failure_domain,
-		   DEFAULT_RULESET_FAILURE_DOMAIN, ss);
+//  err |= to_string("ruleset-root", profile,
+//		   &ruleset_root,
+//		   DEFAULT_RULESET_ROOT, ss);
+//  err |= to_string("ruleset-failure-domain", profile,
+//		   &ruleset_failure_domain,
+//		   DEFAULT_RULESET_FAILURE_DOMAIN, ss);
+  err = parse_nkr(profile, ss);
+  if (err)
+    return err;
   err |= parse(profile, ss);
   if (err)
     return err;
@@ -82,10 +138,10 @@ int ErasureCodeOptLrc::init(ErasureCodeProfile& profile, ostream *ss)
   return err;
 }
 
-int ErasureCodeOptLrc::parse(ErasureCodeProfile &profile,
-			       ostream *ss)
+int ErasureCodeOptLrc::parse_nkr(ErasureCodeProfile &profile,
+			      ostream *ss)
 {
-  int err = ErasureCode::parse(profile, ss);
+  int err = 0;
   err |= to_int("n", profile, &n, DEFAULT_N, ss);
   err |= to_int("k", profile, &k, DEFAULT_K, ss);
   err |= to_int("r", profile, &r, DEFAULT_R, ss);
@@ -96,10 +152,130 @@ int ErasureCodeOptLrc::parse(ErasureCodeProfile &profile,
     chunk_mapping.clear();
     err = -EINVAL;
   }
-  err |= sanity_check_k(k, ss);
+  ErasureCodeProfile::const_iterator parameter;
+  string ruleset_locality;
+  parameter = profile.find("ruleset-locality");
+  if (parameter != profile.end())
+    ruleset_locality = parameter->second;
+  string ruleset_failure_domain = "host";
+  parameter = profile.find("ruleset-failure-domain");
+  if (parameter != profile.end())
+    ruleset_failure_domain = parameter->second;
+
+  int local_group_count = ceil(n/(r+1));
+  if (ruleset_locality != "") {
+    ruleset_steps.clear();
+    ruleset_steps.push_back(Step("choose", ruleset_locality,
+				 local_group_count));
+    ruleset_steps.push_back(Step("chooseleaf", ruleset_failure_domain,
+				 r + 1));
+  } else if (ruleset_failure_domain != "") {
+    ruleset_steps.clear();
+    ruleset_steps.push_back(Step("chooseleaf", ruleset_failure_domain, 0));
+  }
   return err;
 }
 
+int ErasureCodeOptLrc::parse(ErasureCodeProfile &profile,
+			       ostream *ss)
+{
+  int err = ErasureCode::parse(profile, ss);
+  err |= sanity_check_k(k, ss);
+  if (err)
+        return err;
+  return parse_ruleset(profile, ss);
+}
+
+int ErasureCodeOptLrc::parse_ruleset(ErasureCodeProfile &profile,
+				  ostream *ss)
+{
+  int err = 0;
+  err |= to_string("ruleset-root", profile,
+		   &ruleset_root,
+		   "default", ss);
+
+  if (profile.count("ruleset-steps") != 0) {
+    ruleset_steps.clear();
+    string str = profile.find("ruleset-steps")->second;
+    json_spirit::mArray description;
+    try {
+      json_spirit::mValue json;
+      json_spirit::read_or_throw(str, json);
+
+      if (json.type() != json_spirit::array_type) {
+	*ss << "ruleset-steps='" << str
+	    << "' must be a JSON array but is of type "
+	    << json.type() << " instead" << std::endl;
+	return ERROR_LRC_ARRAY;
+      }
+      description = json.get_array();
+    } catch (json_spirit::Error_position &e) {
+      *ss << "failed to parse ruleset-steps='" << str << "'"
+	  << " at line " << e.line_ << ", column " << e.column_
+	  << " : " << e.reason_ << std::endl;
+      return ERROR_LRC_PARSE_JSON;
+    }
+
+    int position = 0;
+    for (vector<json_spirit::mValue>::iterator i = description.begin();
+	 i != description.end();
+	 ++i, position++) {
+      if (i->type() != json_spirit::array_type) {
+	stringstream json_string;
+	json_spirit::write(*i, json_string);
+	*ss << "element of the array "
+	    << str << " must be a JSON array but "
+	    << json_string.str() << " at position " << position
+	    << " is of type " << i->type() << " instead" << std::endl;
+	return ERROR_LRC_ARRAY;
+      }
+      int r = parse_ruleset_step(str, i->get_array(), ss);
+      if (r)
+	return r;
+    }
+  }
+  return 0;
+}
+
+int ErasureCodeOptLrc::parse_ruleset_step(string description_string,
+				       json_spirit::mArray description,
+				       ostream *ss)
+{
+  stringstream json_string;
+  json_spirit::write(description, json_string);
+  string op;
+  string type;
+  int n = 0;
+  int position = 0;
+  for (vector<json_spirit::mValue>::iterator i = description.begin();
+       i != description.end();
+       ++i, position++) {
+    if ((position == 0 || position == 1) &&
+	i->type() != json_spirit::str_type) {
+      *ss << "element " << position << " of the array "
+	  << json_string.str() << " found in " << description_string
+	  << " must be a JSON string but is of type "
+	  << i->type() << " instead" << std::endl;
+      return position == 0 ? ERROR_LRC_RULESET_OP : ERROR_LRC_RULESET_TYPE;
+    }
+    if (position == 2 && i->type() != json_spirit::int_type) {
+      *ss << "element " << position << " of the array "
+	  << json_string.str() << " found in " << description_string
+	  << " must be a JSON int but is of type "
+	  << i->type() << " instead" << std::endl;
+      return ERROR_LRC_RULESET_N;
+    }
+
+    if (position == 0)
+      op = i->get_str();
+    if (position == 1)
+      type = i->get_str();
+    if (position == 2)
+      n = i->get_int();
+  }
+  ruleset_steps.push_back(Step(op, type, n));
+  return 0;
+}
 int ErasureCodeOptLrc::encode_chunks(const set<int> &want_to_encode,
 				       map<int, bufferlist> *encoded)
 {
