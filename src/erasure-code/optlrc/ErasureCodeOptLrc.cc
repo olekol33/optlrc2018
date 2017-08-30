@@ -401,7 +401,7 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
 
 }
 
-int ErasureCodeOptLrc::optlrc_decode_local(const int erased, char **decoded, int group_size, int blocksize) {
+int ErasureCodeOptLrc::optlrc_decode_local(const int erased, int *matrix, char **decoded, int group_size, int blocksize) {
 
 	//int coef_mat[r+1];
 	//char *dst = talloc(char, blocksize);
@@ -439,6 +439,7 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
 	POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
 	int m=0;
 	// k failed chunks at max, (r+1)*k matrix for each
+	int *optlrc_matrix_local = talloc(int, (r+1)*k);
 
         //set<int> available_chunks;
         set<int> erasures;
@@ -479,7 +480,7 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
                 	}
                 }
                 //optlrc_decode_local(erased, optlrc_matrix_local, &local[0], r+1, blocksize);
-                optlrc_decode_local(erased, local, group_size, blocksize);
+                optlrc_decode_local(erased, optlrc_matrix_local, local, group_size, blocksize);
                 //reset in case more than 1 erasure
                 m=0;
                 erasures_init--;
