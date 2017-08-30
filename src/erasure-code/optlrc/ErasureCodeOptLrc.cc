@@ -280,36 +280,10 @@ int ErasureCodeOptLrc::encode_chunks(const set<int> &want_to_encode,
 				       map<int, bufferlist> *encoded)
 {
 	char *chunks[n];
-	int blocksize = (*encoded->begin()).second.length();
-	char *sptr;
-	char *dptr = talloc(char, blocksize);
-        char *temp = dptr;
-	char *chunks_temp = talloc(char, n*blocksize);
-	OptLRC_Configs optlrc_configs;
-	POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
 
 	for (int i = 0; i < n; i++)
 		chunks[i] = (*encoded)[i].c_str();
 	optlrc_encode(&chunks[0], &chunks[k], (*encoded->begin()).second.length());
-        //Now that we have encoded with a systematic matrix
-        // rearrange chunk location by local groups
-        for (int i = 0; i < n; i++) {
-                sptr=chunks[i];
-        	  memcpy(chunks_temp+i*blocksize,sptr,blocksize);
-        	  //chunks_temp[i]=dptr;
-        }
-        //memcpy(chunks_temp,chunks,n*blocksize);
-        for (int i = 0; i < n; i++) {
-                dptr=chunks[i];
-                int t;
-                for (t=0;t<n;t++) {
-              	  if (i==pOptLRC_G->optlrc_perm[t])
-              		  break;
-                }
-                memcpy(dptr,chunks_temp + blocksize*(t),blocksize);
-        }
-        free(chunks_temp);
-        free(temp);
 	return 0;
 }
 
@@ -367,12 +341,12 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
 
     //check to which group the failed node belongs, optlrc_perm points to the real symbol location
     for (set<int>::iterator it = erasures_want.begin(); it != erasures_want.end(); ++it) {
-            if (failed_groups.count(*it /(r+1)) == 1 ) {
+            if (failed_groups.count(pOptLRC_G->optlrc_perm[*it] /(r+1)) == 1 ) {
                         dout(20) << __func__ << " twice failed in the same group "
-                                 << *it /(r+1) << dendl;
+                                 << pOptLRC_G->optlrc_perm[*it] /(r+1) << dendl;
                         return -EIO;
         }
-        failed_groups.insert( *it /(r+1));
+        failed_groups.insert( pOptLRC_G->optlrc_perm[*it] /(r+1));
 
     //
     // Case 2:
@@ -382,7 +356,7 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
     for (set<int>::iterator it1 = failed_groups.begin(); it1 != failed_groups.end(); ++it1){
         for (set<int>::iterator it2 = available_chunks.begin(); it2 != available_chunks.end(); ++it2){
             //if chunk is available and in required group - add to minimum
-		if ((*it2 / (r+1)) == *it1 )
+		if ((pOptLRC_G->optlrc_perm[*it2] / (r+1)) == *it1 )
                 	minimum->insert(*it2);
         }
     }
@@ -408,7 +382,7 @@ int ErasureCodeOptLrc::optlrc_decode_local(const int erased, int *matrix, char *
 	//int init=0;
 	OptLRC_Configs optlrc_configs;
 	POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
-	int loc_erased = erased % (r+1);
+	int loc_erased = pOptLRC_G->optlrc_perm[erased] % (r+1);
 	//int group = pOptLRC_G->optlrc_perm[erased] / (r+1);
 
     //normalize coefficients by lost chunk coefficient
@@ -463,19 +437,19 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
                 int group_size = 0;
 	        int erased = *it;
 	        //calculate failed group from real location
-	        failed_group = erased /(r+1);
+	        failed_group = pOptLRC_G->optlrc_perm[erased] /(r+1);
 	        //TODO: adjust for arbitrary code length
                 for (int i=0;i<n;i++){
                 	//find rest of failed group from real location
-                	if ((i / (r+1)) == failed_group) {
+                	if ((pOptLRC_G->optlrc_perm[i] / (r+1)) == failed_group) {
                                 group_size++;
-                                m= i % (r+1);
+                                m= pOptLRC_G->optlrc_perm[i] % (r+1);
                 		//collect local group
                 		local[m] = (*decoded)[i].c_str();
-                                /*for (int j=0; j<k; j++) {
+                                for (int j=0; j<k; j++) {
                 			optlrc_matrix_local[m*k + j] = pOptLRC_G->optlrc_encode[i][j];
 
-                		}*/
+                		}
                 		//m++;
                 	}
                 }
