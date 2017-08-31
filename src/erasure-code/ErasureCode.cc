@@ -171,6 +171,7 @@ int ErasureCode::decode(const set<int> &want_to_read,
   for (unsigned int i =  0; i < k + m; i++) {
     if (chunks.find(i) == chunks.end()) {
       bufferptr ptr(buffer::create_aligned(blocksize, SIMD_ALIGN));
+      ptr.zero();
       (*decoded)[i].push_front(ptr);
     } else {
       (*decoded)[i] = chunks.find(i)->second;
