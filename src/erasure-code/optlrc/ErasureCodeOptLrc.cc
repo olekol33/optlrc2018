@@ -407,7 +407,7 @@ int ErasureCodeOptLrc::optlrc_decode_local(const int erased, char **decoded, int
 
 	//int coef_mat[r+1];
 	//char *dst = talloc(char, blocksize);
-	//int init=0;
+	int init=0;
 	OptLRC_Configs optlrc_configs;
 	POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
 	int loc_erased = erased % (r+1);
@@ -417,10 +417,16 @@ int ErasureCodeOptLrc::optlrc_decode_local(const int erased, char **decoded, int
 		coef_mat[i] = galois_single_divide(pOptLRC_G->optlrc_coef[group][i],
 				pOptLRC_G->optlrc_coef[group][loc_erased],8);
 	}*/
+	char *dst = decoded[loc_erased];
 	for (int i=0;i<group_size;i++){
 		if (i!=loc_erased){
 			char *src = decoded[i];
-                        galois_region_xor(src,decoded[loc_erased],blocksize);
+			if (init==0) {
+				memcpy(dst, src, blocksize);
+				init=1;
+			}
+			else
+                                galois_region_xor(src,decoded[loc_erased],blocksize);
 			//galois_w08_region_multiply(src, coef_mat[i], blocksize, decoded[loc_erased], init);
 			//init=1;
 		}
@@ -450,13 +456,15 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
           //}
           //else
           //{
-            //  dout(0) << "i is erased : " << i << " decoded value is " << strlen((*decoded)[i].c_str()) << dendl;
             //erasures.insert(i);
               if (want_to_read.count(i) != 0)
                       erasures.insert(i);
 
           }
         }
+        //for (unsigned int i = 0; i < get_chunk_count(); ++i) {
+        //      dout(0) << "want to read: " << want_to_read << " chunk : " << i << " decoded value is " << strlen((*decoded)[i].c_str()) << dendl;
+        //}
         int erasures_init=erasures.size();
 
         //for (set<int>::iterator it = want_to_read.begin(); it != want_to_read.end(); ++it) {
