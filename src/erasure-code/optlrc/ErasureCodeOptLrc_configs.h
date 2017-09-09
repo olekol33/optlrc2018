@@ -22,16 +22,6 @@ typedef struct OptLRC {
 
 } OptLRC, *POptLRC;
 
-typedef struct OptLRC_Configs
-{
-    POptLRC configs[MAX_CHUNKS][MAX_DATA_CHUNKS][MAX_LOCALITY_CHUNKS];
-    OptLRC_Configs()
-    {
-        /*
-         * Total Chunks
-         * Data Chunks
-         * Locality
-         */
 struct OptLRC optlrc_9_4_2 = {
 optlrc_encode : {
 {1, 0, 0, 0},
@@ -158,6 +148,7 @@ optlrc_encode : {
 {159, 234, 117, 155, 25, 130, 104, 187, 211, 111, 74, 37}
 }
 };
+
 struct OptLRC optlrc_18_12_4 = {
 optlrc_encode : {
 {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -180,6 +171,17 @@ optlrc_encode : {
 {42, 96, 182, 139, 16, 240, 129, 174, 244, 93, 15, 248}
 }
 };
+
+typedef struct OptLRC_Configs
+{
+    POptLRC configs[MAX_CHUNKS][MAX_DATA_CHUNKS][MAX_LOCALITY_CHUNKS];
+    OptLRC_Configs()
+    {
+        /*
+         * Total Chunks
+         * Data Chunks
+         * Locality
+         */
         configs[9][4][2]  =  &optlrc_9_4_2;
         configs[10][6][4]  =  &optlrc_10_6_4;
         configs[10][6][3]  =  &optlrc_10_6_3;

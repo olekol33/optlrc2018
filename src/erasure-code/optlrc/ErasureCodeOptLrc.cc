@@ -456,15 +456,13 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
           //}
           //else
           //{
+            //  dout(0) << "i is erased : " << i << " decoded value is " << strlen((*decoded)[i].c_str()) << dendl;
             //erasures.insert(i);
               if (want_to_read.count(i) != 0)
                       erasures.insert(i);
 
           }
         }
-        //for (unsigned int i = 0; i < get_chunk_count(); ++i) {
-        //      dout(0) << "want to read: " << want_to_read << " chunk : " << i << " decoded value is " << strlen((*decoded)[i].c_str()) << dendl;
-        //}
         int erasures_init=erasures.size();
 
         //for (set<int>::iterator it = want_to_read.begin(); it != want_to_read.end(); ++it) {
@@ -488,7 +486,9 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
                 		//m++;
                 	}
                 }
+                //optlrc_decode_local(erased, optlrc_matrix_local, &local[0], r+1, blocksize);
                 //optlrc_decode_local(erased, optlrc_matrix_local, local, group_size, blocksize);
+
                 optlrc_decode_local(erased, local, group_size, blocksize);
                 //reset in case more than 1 erasure
                 m=0;
