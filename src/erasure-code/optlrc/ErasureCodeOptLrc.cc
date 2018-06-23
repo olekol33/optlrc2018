@@ -1,3 +1,8 @@
+/*
+ * ErasureCodeOptLrc.cc
+ *
+ *      Author: Oleg Kolosov
+ */
 #include <errno.h>
 #include <algorithm>
 #include <math.h>
@@ -287,7 +292,7 @@ int ErasureCodeOptLrc::encode_chunks(map<int, bufferlist> *encoded)
                 chunks[ind] = (*encoded)[*i].c_str();
                 ind++;
         }
-
+	// send mapping to data and coding chunks for the encode process
         optlrc_encode(&chunks[0], &chunks[k], (*encoded->begin()).second.length());
 
 	return 0;
@@ -296,6 +301,7 @@ int ErasureCodeOptLrc::encode_chunks(map<int, bufferlist> *encoded)
 void ErasureCodeOptLrc::optlrc_encode(char **data, char **coding, int blocksize)
 {
 	OptLRC_Configs optlrc_configs;
+	// Fetch pre-calculated generator matrix for n,k,r
 	POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
 	int *matrix = talloc(int, (n-k)*k);
 	if (matrix == NULL) {
@@ -304,6 +310,7 @@ void ErasureCodeOptLrc::optlrc_encode(char **data, char **coding, int blocksize)
 	}
 
         int ind=0;
+	// adjust generator matrix format for jerasure_matrix_encode
         for (auto i = mapping.begin(); i != mapping.end(); ++i) {
         	if (ind<k){
         		ind++;
@@ -313,6 +320,7 @@ void ErasureCodeOptLrc::optlrc_encode(char **data, char **coding, int blocksize)
 	        	matrix[k*(ind-k)+j]= pOptLRC_G->optlrc_encode[*i][j];
 	        ind++;
 	}
+	// encode data
 	jerasure_matrix_encode(k, n-k, 8, matrix, data, coding, blocksize);
 
 	free(matrix);
@@ -363,6 +371,7 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
     // Case 2:
     //
     // We have one erasure in local group
+    // We assume we cannot have more than one erasure in a local group
     //
     for (set<int>::iterator it1 = failed_groups.begin(); it1 != failed_groups.end(); ++it1){
         for (set<int>::iterator it2 = available_chunks.begin(); it2 != available_chunks.end(); ++it2){
@@ -388,18 +397,17 @@ int ErasureCodeOptLrc::minimum_to_decode(const set<int> &want_to_read,
 
 int ErasureCodeOptLrc::optlrc_decode_local(const int erased, char **decoded, int group_size, int blocksize) {
 
-	//int coef_mat[r+1];
-	//char *dst = talloc(char, blocksize);
 	int init=0;
 	OptLRC_Configs optlrc_configs;
 	POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
 	int loc_erased = erased % (r+1);
-
-    //normalize coefficients by lost chunk coefficient
 	char *dst = decoded[loc_erased];
+	// go over all chunks in local group
 	for (int i=0;i<group_size;i++){
+		// if not the erased chunk then we have it
 		if (i!=loc_erased){
 			char *src = decoded[i];
+			// XOR surviving chunks to decode erased chunk
 			if (init==0) {
 				memcpy(dst, src, blocksize);
 				init=1;
@@ -421,8 +429,8 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
 	OptLRC_Configs optlrc_configs;
 	POptLRC pOptLRC_G = optlrc_configs.configs[n][k][r];
 	int m=0;
-	// k failed chunks at max, (r+1)*k matrix for each
         set<int> erasures;
+	// Collect erased chunks
         for (unsigned int i = 0; i < get_chunk_count(); ++i) {
           if (chunks.count(i) == 0){
               if (want_to_read.count(i) != 0)
@@ -431,6 +439,7 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
           }
         }
         int erasures_init=erasures.size();
+	// Handle erasures one by one
         for (set<int>::iterator it = erasures.begin(); it != erasures.end(); ++it) {
                 int group_size = 0;
 	        int erased = *it;
@@ -445,6 +454,7 @@ int ErasureCodeOptLrc::decode_chunks(const set<int> &want_to_read,
                 		local[m] = (*decoded)[i].c_str();
                 	}
                 }
+		// Proceed to decoding itself
                 optlrc_decode_local(erased, local, group_size, blocksize);
                 //reset in case more than 1 erasure
                 m=0;
