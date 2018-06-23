@@ -1,3 +1,9 @@
+/*
+ * ErasureCodeOptLrc_configs.h
+ * A collection of generator matrices for Optimal-LRC encoding
+ *
+ *      Author: Oleg Kolosov
+ */
 #ifndef OPTLRC_CONFIGS_HPP_
 #define OPTLRC_CONFIGS_HPP_
 
