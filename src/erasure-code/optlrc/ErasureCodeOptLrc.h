@@ -46,7 +46,6 @@ public:
   std::string DEFAULT_R;
   std::string ruleset_root;
   std::vector<int> mapping;
-  //std::string ruleset_failure_domain;
   struct Step {
     Step(std::string _op, std::string _type, int _n) :
       op(_op),
@@ -81,9 +80,10 @@ unsigned int get_chunk_size(unsigned int object_size) const override ;
  * Name: encode_chunks
  *
  * Description:
- * This function
+ * This function is a wrapper for optlrc_encode. 
  *
  * Parameters:
+ * encoded - the map we will encode
  *
  * Return:
  * 0 on success
@@ -92,9 +92,27 @@ unsigned int get_chunk_size(unsigned int object_size) const override ;
  * Notes:
  *
  */
-int encode_chunks(const std::set<int> &want_to_encode,
-      	    std::map<int, bufferlist> *encoded) override;
-//int optlrc_decode_local(const int erased, int *matrix,
+int encode_chunks(std::map<int, bufferlist> *encoded) override;
+/*
+ * Name: optlrc_decode_local
+ *
+ * Description:
+ * This function performs a XOR operation on surviving chunk in a local group to 
+ * reconstruct a lost chunk.
+ *
+ * Parameters:
+ * erased - ID of the erased chunk
+ * decoded - map chunk indexes to chunk data
+ * group_size - the size of the local group
+ * blocksize - the size of a chunk in bytes
+ * 
+ * Return:
+ * 0 on success
+ * -EINVAL on invalid configuration
+ *
+ * Notes:
+ *
+ */
 int optlrc_decode_local(const int erased,
 				char **decoded, int group_size, int blocksize);
 
@@ -104,10 +122,49 @@ int parse_ruleset(ErasureCodeProfile &profile, std::ostream *ss);
 int parse_ruleset_step(std::string description_string,
 			 json_spirit::mArray description,
 			 std::ostream *ss);
+/*
+ * Name: decode_chunks
+ *
+ * Description:
+ * This function decodes chunks using optlrc_decode_local.
+ * It collects all erased chunk. 
+ * Then, per each erased chunk, it constructs an array of surviving chunks from its local group.
+ * The array is passed to optlrc_decode_local for the decoding procedure.
+ *
+ * Parameters:
+ * want_to_read - chunk indexes to be decoded
+ * chunks - map chunk indexes to chunk data
+ * decoded - map chunk indexes to chunk data
+ * Return:
+ * 0 on success
+ * -EINVAL on invalid configuration
+ *
+ * Notes:
+ *
+ */
 int decode_chunks(const std::set<int> &want_to_read,
 			    const std::map<int, bufferlist> &chunks,
 			    std::map<int, bufferlist> *decoded) override;
 
+/*
+ * Name: optlrc_encode
+ *
+ * Description:
+ * This function encodes data in Optimal-LRC using a pre-calculated generator matrix
+ *
+ * Parameters:
+ * data - the pointers of the data chunks
+ * coding - the pointers of the coding chunks
+ * blocksize - the size of a chunk in bytes
+ *
+ * Return:
+ * 0 on success
+ * -EINVAL on invalid configuration
+ *
+ * Notes:
+ *
+ */
+	
 void optlrc_encode(char **data, char **coding, int blocksize);
 
 int minimum_to_decode(const std::set<int> &want_to_read,
