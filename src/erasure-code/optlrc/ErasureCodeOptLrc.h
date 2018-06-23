@@ -1,3 +1,10 @@
+/*
+ * ErasureCodeOptLrc.h
+ *
+ *      Author: Oleg Kolosov
+ */
+
+
 #ifndef CEPH_ERASURE_CODE_OPTLRC_H
 #define CEPH_ERASURE_CODE_OPTLRC_H
 #include "erasure-code/ErasureCode.h"
@@ -50,8 +57,6 @@ public:
     int n;
   };
   std::vector<Step> ruleset_steps;
-
-  //explicit ErasureCodeOptLrc() :
   explicit ErasureCodeOptLrc() :
 	  n(0),
 	  DEFAULT_N("9"),
@@ -59,14 +64,9 @@ public:
 	  DEFAULT_K("4"),
 	  r(0),
 	  DEFAULT_R("2")
-	  //technique(_technique),
-	  //ruleset_root(DEFAULT_RULESET_ROOT),
   {
     ruleset_steps.push_back(Step("chooseleaf", "host", 0));
   }
-	  //ruleset_failure_domain(DEFAULT_RULESET_FAILURE_DOMAIN)
-	  //per_chunk_alignment(false)
-  //{}
 ~ErasureCodeOptLrc() override {}
 int init(ErasureCodeProfile &profile, std::ostream *ss) override;
 unsigned int get_chunk_count() const override {
@@ -77,7 +77,21 @@ unsigned int get_data_chunk_count() const override {
   }
 unsigned int get_alignment() const;
 unsigned int get_chunk_size(unsigned int object_size) const override ;
-
+/*
+ * Name: encode_chunks
+ *
+ * Description:
+ * This function
+ *
+ * Parameters:
+ *
+ * Return:
+ * 0 on success
+ * -EINVAL on invalid configuration
+ *
+ * Notes:
+ *
+ */
 int encode_chunks(const std::set<int> &want_to_encode,
       	    std::map<int, bufferlist> *encoded) override;
 //int optlrc_decode_local(const int erased, int *matrix,
@@ -94,17 +108,12 @@ int decode_chunks(const std::set<int> &want_to_read,
 			    const std::map<int, bufferlist> &chunks,
 			    std::map<int, bufferlist> *decoded) override;
 
-//  virtual int init(ErasureCodeProfile &profile, std::ostream *ss);
-
 void optlrc_encode(char **data, char **coding, int blocksize);
 
 int minimum_to_decode(const std::set<int> &want_to_read,
 		const std::set<int> &available,
 		std::set<int> *minimum) override;
 
-//int create_rulestd::set(const std::string &name,
-//		     CrushWrapper &crush,
-//		     std::ostream *ss) const;
 int create_ruleset(const std::string &name,
 			CrushWrapper &crush,
 			std::ostream *ss) const override;
