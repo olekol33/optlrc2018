@@ -17,6 +17,8 @@ Optimal-LRC
 -----------------------
 Optimal-LRC is a recently proposed [1] full-LRC . In this code, k data blocks and m global parities are divided into groups of size r, and a local parity is added to each group, allowing repair of any lost block by the r surviving blocks in its group. r does not necessarily divide m + k, but Optimal-LRC requires that n mod (r + 1) != 1.
 
+In 'Optimal LRC codes for all lenghts n<= q' [4] a new construction was developed based on the original construction. In the new construiction Optimal-LRC has optimal minimum distance for all n mod (r + 1) != 1. This folder contains the new implementation.
+
 
 -----------------------
 Implementation content
@@ -69,7 +71,58 @@ The structure of Optimal-LRC allows us to decode a chunk using a XOR operation o
 The function has a list of all surviving chunks in the local group and it goes over them one by one, XORing each one with the XOR of all previous chunks. The result is placed in the location of the erased chunk finalizing the reconstruction process.
 
 -----------------------
+Comments
+-----------------------
+- Non optimal implementation in:
+ceph/src/erasure-code/lrc/ErasureCodeLrc.cc  (line 637)
+
+Described in 'On Fault Tolerance, Locality, and Optimality in Locally Repairable Codes' [3] section 5, this is the resulting fix:
+
+          set_difference(i->chunks_as_set.begin(), i->chunks_as_set.end(),
+             erasures_not_recovered.begin(), erasures_not_recovered.end(),
+             inserter(layer_minimum, layer_minimum.end()));
+       
+Was fixed to:
+
+          set<int> layer_maximum;
+          set_difference(i->chunks_as_set.begin(), i->chunks_as_set.end(),
+                        erasures_not_recovered.begin(),erasures_not_recovered.end(),
+                        inserter(layer_maximum,layer_maximum.end()));
+          unsigned int k=0;
+          for (unsigned int j = 0; j < get_chunk_count(); ++j) {
+              if (layer_maximum.count(j) != 0) {
+                  k++;
+                  layer_minimum.insert(j);
+                  if ( k == i->erasure_code->get_data_chunk_count() )
+                              break;
+              }
+          }
+          
+- The code was implemented on Ceph 12.0.2
+
+-----------------------
+Running instructions
+-----------------------
+## Matlab ##
+
+
+## Build ##
+
+Follow the instructions in /README.md
+
+For the purpose of our research the source code was built with deb.
+
+## Building Ceph Optimal-LRC pool ##
+
+The running instructions are based on the original Ceph LRC plugin:
+http://docs.ceph.com/docs/mimic/rados/operations/erasure-code-lrc/
+
+For creating an Optimal-LRC pool use :
+
+-----------------------
 Reference
 -----------------------
 [1] I. Tamo and A. Barg. A family of optimal locally recoverable codes. IEEE Transactions on Information Theory, 60(8):4661–4676, Aug 2014
 [2] http://jerasure.org/jerasure-2.0/
+[3] Kolosov, Oleg, Gala Yadgar, Matan Liram, Itzhak Tamo, and Alexander Barg. "On Fault Tolerance, Locality, and Optimality in Locally Repairable Codes." 2018 USENIX Annual Technical Conference USENIX ATC 18. USENIX Association, 2018.
+[4] Kolosov, Oleg, Alexander Barg, Itzhak Tamo, and Gala Yadgar. "Optimal LRC codes for all lenghts n<= q" arXiv preprint arXiv:1802.00157 (2018).
