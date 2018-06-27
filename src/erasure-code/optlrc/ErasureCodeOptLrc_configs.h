@@ -1,9 +1,21 @@
 /*
- * ErasureCodeOptLrc_configs.h
- * A collection of generator matrices for Optimal-LRC encoding
- *
- *      Author: Oleg Kolosov
- */
+***   Implementation of Optimal-LRC plugin for Ceph   ***
+
+Written by: Oleg Kolosov, Tel Aviv University
+Date: 27/06/2018
+
+The code for the implementation of USENIX ATC 2018 paper 
+## On Fault Tolerance, Locality, and Optimality in Locally Repairable Codes ###
+https://www.usenix.org/conference/atc18/presentation/kolosov
+
+Authors: 
+Oleg Kolosov, School of Electrical Engineering, Tel Aviv University; 
+Gala Yadgar, Computer Science Department, Technion and School of Electrical Engineering, Tel Aviv University; 
+Matan Liram, Computer Science Department, Technion; 
+Itzhak Tamo, School of Electrical Engineering, Tel Aviv University; 
+Alexander Barg, Department of ECE/ISR, University of Maryland
+*/
+
 #ifndef OPTLRC_CONFIGS_HPP_
 #define OPTLRC_CONFIGS_HPP_
 
