@@ -1,5 +1,7 @@
 ***   Implementation of Optimal-LRC plugin for Ceph   ***
+
 Written by: Oleg Kolosov, Tel Aviv University
+Date: 27/06/2018
 
 The code for the implementation of USENIX ATC 2018 paper 
 ### On Fault Tolerance, Locality, and Optimality in Locally Repairable Codes ###
