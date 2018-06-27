@@ -42,6 +42,7 @@ if found == 0
 	end
 end
 %for r=5
+%try to find subgroup for r=5
 if (r==5)
     g_old=g_for_r_5(n,field,r);
     found=1;
@@ -73,7 +74,7 @@ t=r+1-s;
 tempt=t;
 while count>0
 
-	%when r+1 no dividing n
+	%when r+1 not dividing n
 	if count == mod(n, r+1)
 		count_loc= mod(n, r+1)-1;
 		init_group = mod(n, r+1);
@@ -146,7 +147,6 @@ if mod(n,r+1) > 0
 	g = g_old + g_el;
 	
 	%max degree of fa
-	%max_len=k-1+(k+1)/r;
 	max_len=floor(kst/r)*(r+1)+(mod(kst,r)-1);
 	
 	%calculate part 1/2
@@ -159,6 +159,7 @@ if mod(n,r+1) > 0
 			for j=[1:floor((kst)/r)]
 				mulg=ppower(g,j);
 				mulx=ppower([1 0],i);
+				%multiplication
 				res=conv(mulg,mulx);
 				%pad to same length
 				while (length(res)<= max_len)
@@ -197,6 +198,7 @@ if mod(n,r+1) > 0
 
 	
 else
+%if not mod(n,r+1) > 0
 
 	max_len=k+ceil(k/r)-2;
 	M=[;];
@@ -213,7 +215,6 @@ else
                 end
                 res
                 M=[M ; res]
-                %fa=(gsym^j)*(x^i)+fa
             end
         else
             for j=[0:floor(k/r)-1]
@@ -224,12 +225,10 @@ else
                     res=[0 res];
                 end
                 M=[M ; res];
-                %fa=(gsym^j)*(x^i)+fa
             end
         end
 	end
 end
-%log(locations)
 mat = [;];
 %set of local groups
 for i = locations
@@ -240,6 +239,7 @@ for i = locations
 	end
 	mat= [mat,b]
 end
+
 %bring generator matrix to coefficients 1
 count =n;
 coef=[;];
@@ -252,19 +252,19 @@ while (count > 0)
 		for i=[1:count_loc]
 			A=[A mat(:,group*(r+1)+i)];
         end
-        %redun_coef = calc_optlrc_coef(A,r,field,n,locations);
-        redun_coef=[ 214   109    43    70     1];
+        redun_coef = calc_optlrc_coef(A,r,field,n,locations);
+        %redun_coef=[ 214   109    43    70     1];
 		break;
 	else
 		count_loc=r+1;
 		for i=[1:count_loc]
 			A=[A mat(:,group*(r+1)+i)];
         end
-        if (group==0)
-            coef = [coef;  215,    49,   232,   217 ,  214 ,    1];
-         elseif (group==1)
-             coef=[coef; 214  , 102   ,212 ,  178 ,  215  ,   1];
-        else 
+        %if (group==0)
+        %    coef = [coef;  215,    49,   232,   217 ,  214 ,    1];
+         %elseif (group==1)
+         %    coef=[coef; 214  , 102   ,212 ,  178 ,  215  ,   1];
+        %else 
         coef=[coef; calc_optlrc_coef(A,r,field,n,locations)];
             end
 		count=count-count_loc;
@@ -280,28 +280,7 @@ if mod(n,r+1) > 0
 		mat(:,i+n-mod(n,r+1))=mat(:,i+n-mod(n,r+1))*(redun_coef(i));
 	end
 end
-%collect k independent columns - at least one 
-% vector from each group
 
-% index = [];
-% while 1
-% 	%randomly select k vector until matrix is invertible
-% 	index = [];
-% 	b=[;];
-% 	for i=1:k
-% 		ranval = floor( mod(1000*rand,n))+1;
-% 		while ( ismember (ranval,index) ~= 0)
-% 			ranval = floor( mod(1000*rand,n))+1;
-% 		end
-% 		index= [ index  ranval];
-% 		b = [b, mat(:, ranval) ];
-% 	end
-% 	if size(b,2) == k
-% 		if (det(b) ~= 0 )
-% 			break
-% 		end
-% 	end
-% end
 b= [;];
 i=1;
 ind=1;
@@ -320,30 +299,7 @@ gintiinv = inv(b);
 %multiply to generate systematic matrix
 glob=gintiinv*mat
 
-%calculate coefficients
-% count =n;
-% coef=[;];
-% group=0;
-% while (count > 0)
-% 	A=[;];
-% 	%when r+1 no dividing n
-% 	if count == mod(n,r+1)
-% 		count_loc= mod(n,r+1);
-% 		for i=[1:count_loc]
-% 			A=[A glob(:,group*(r+1)+i)];
-%         end
-%         redun_coef = calc_optlrc_coef(A,mod(n,r+1)-1,field);
-% 		break;
-% 	else
-% 		count_loc=r+1;
-% 		for i=[1:count_loc]
-% 			A=[A glob(:,group*(r+1)+i)];
-% 		end
-% 		coef=[coef; calc_optlrc_coef(A,r,field)];
-% 		count=count-count_loc;
-% 		group=group+1;
-% 	end
-% end	
+
 
 %calculate permutations
 perm=[];
@@ -364,9 +320,7 @@ for i=[1:k]
 	end
 end
 
-%find_d(encode,k,n)
-%encode
-%encode=encode';
+
 encode=glob';
 
 %print matrices
@@ -390,39 +344,7 @@ for j=[2:k]
 end
 fprintf(fileID,"}\n");
 fprintf(fileID,"}\n");
-% fprintf(fileID,"optlrc_perm : {");
-% for i=[1:n-1]
-%      fprintf(fileID,"%d,",perm(i)-1);
-% end
-% fprintf(fileID,"%d}\n",perm(n)-1);
-% fprintf(fileID,"optlrc_coef : {\n");
-% for i=1:(floor(n/(r+1))-1)
-%     len=r+1;
-%     fprintf(fileID,"{");
-%     for j=1:len-1
-%         %temp=coef(i,j);
-%         fprintf(fileID,"%d,",coef(i,j));
-%     end
-%     fprintf(fileID,"%d},\n",coef(i,r+1));
-% end
-%     len=r+1;
-%     fprintf(fileID,"{");
-%     for j=1:len-1
-%         temp=coef(i,j);
-%         fprintf(fileID,"%d,",coef(i,j));
-%     end
-%     if (mod(n,r+1) == 0)
-%         fprintf(fileID,"%d}\n}",coef(i,floor(n/(r+1))));
-%     else
-%         fprintf(fileID,"%d},\n}",coef(i,floor(n/(r+1))));
-%         len=length(redun_coef);
-%         fprintf(fileID,"{");
-%         for j=1:len-1
-%             %temp=coef(i,j);
-%             fprintf(fileID,"%d,",coef(i,j));
-%         end
-%         fprintf(fileID,"%d}\n",coef(i,r+1));
-%     end
+
    fprintf(fileID,"};");
 fclose(fileID);
 
