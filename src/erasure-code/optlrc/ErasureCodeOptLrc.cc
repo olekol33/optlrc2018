@@ -1,18 +1,20 @@
-#***   Implementation of Optimal-LRC plugin for Ceph   ***
-#
-#Written by: Oleg Kolosov, Tel Aviv University
-#Date: 27/06/2018
-#
-#The code for the implementation of USENIX ATC 2018 paper 
-### On Fault Tolerance, Locality, and Optimality in Locally Repairable Codes ###
-#https://www.usenix.org/conference/atc18/presentation/kolosov
-#
-#Authors: 
-#Oleg Kolosov, School of Electrical Engineering, Tel Aviv University; 
-#Gala Yadgar, Computer Science Department, Technion and School of Electrical Engineering, Tel Aviv University; 
-#Matan Liram, Computer Science Department, Technion; 
-#Itzhak Tamo, School of Electrical Engineering, Tel Aviv University; 
-#Alexander Barg, Department of ECE/ISR, University of Maryland
+/*
+***   Implementation of Optimal-LRC plugin for Ceph   ***
+
+Written by: Oleg Kolosov, Tel Aviv University
+Date: 27/06/2018
+
+The code for the implementation of USENIX ATC 2018 paper 
+## On Fault Tolerance, Locality, and Optimality in Locally Repairable Codes ###
+https://www.usenix.org/conference/atc18/presentation/kolosov
+
+Authors: 
+Oleg Kolosov, School of Electrical Engineering, Tel Aviv University; 
+Gala Yadgar, Computer Science Department, Technion and School of Electrical Engineering, Tel Aviv University; 
+Matan Liram, Computer Science Department, Technion; 
+Itzhak Tamo, School of Electrical Engineering, Tel Aviv University; 
+Alexander Barg, Department of ECE/ISR, University of Maryland
+*/
 
 #include <errno.h>
 #include <algorithm>
@@ -86,8 +88,6 @@ int ErasureCodeOptLrc::create_ruleset(const string &name,
   assert(ret == 0);
   ret = crush.set_rule_step(rno, step++, CRUSH_RULE_TAKE, root, 0);
   assert(ret == 0);
-  // [ [ "choose", "rack", 2 ],
-  //   [ "chooseleaf", "host", 5 ] ]
   for (vector<Step>::const_iterator i = ruleset_steps.begin();
        i != ruleset_steps.end();
        ++i) {
