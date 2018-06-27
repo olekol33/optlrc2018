@@ -1,4 +1,4 @@
-% ***   Implementation of Optimal-LRC plugin for Ceph   ***
+% ***   Implementation of Optimal-LRC generator matrices for Ceph plugin   ***
 % 
 % Written by: Oleg Kolosov, Tel Aviv University
 % Date: 27/06/2018
