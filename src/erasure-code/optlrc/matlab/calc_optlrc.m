@@ -1,12 +1,13 @@
 function [encode,perm,coef] = calc_optlrc (n,k,r)
 field=8;
-
+%can't have local group of size 1
 if (mod(n,r+1) == 1)
 	error('s=1 illegal\n');
 end
 
 i=1;
 found=0;
+%determine whether the subgroup is multiplicative or additive and construct g(x)
 while (i<=r+1)
 	if (r+1 == i)
 		found=1;
