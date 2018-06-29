@@ -60,13 +60,16 @@ if found == 0
 end
 %for r=5
 %try to find subgroup for r=5
+%in which g(x) is equal on each subgroup
+%even when g(x) is found, the matrix would probably need to be calculated
+%manually instead the function calc_optlrc_coef
 if (r==5)
     g_old=g_for_r_5(n,field,r);
     found=1;
     fprintf('r=5 subgroup\n');
 end
 if (found ==0)
-	error('No subgroup\n');
+	error('No subgroup found, calculate manually\n');
 end
 
 
@@ -77,7 +80,6 @@ base = [];
 for i=[1:(2^field-1)]
 	e= gf (i,field);
 	base = [base i];
-	%val= [val,e^(r+1)];
 	val= [val polyval(gf(g_old,field),e)];
 end
 count=n;
@@ -270,20 +272,13 @@ while (count > 0)
 			A=[A mat(:,group*(r+1)+i)];
         end
         redun_coef = calc_optlrc_coef(A,r,field,n,locations);
-        %redun_coef=[ 214   109    43    70     1];
 		break;
 	else
 		count_loc=r+1;
 		for i=[1:count_loc]
 			A=[A mat(:,group*(r+1)+i)];
         end
-        %if (group==0)
-        %    coef = [coef;  215,    49,   232,   217 ,  214 ,    1];
-         %elseif (group==1)
-         %    coef=[coef; 214  , 102   ,212 ,  178 ,  215  ,   1];
-        %else 
-        coef=[coef; calc_optlrc_coef(A,r,field,n,locations)];
-            end
+		coef=[coef; calc_optlrc_coef(A,r,field,n,locations)];
 		count=count-count_loc;
 		group=group+1;
 	end
