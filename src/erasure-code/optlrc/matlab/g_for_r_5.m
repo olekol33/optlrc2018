@@ -15,7 +15,7 @@
 % Alexander Barg, Department of ECE/ISR, University of Maryland
 
 
-function [g] = calc_optlrc (n,field,r)
+function [g] = g_for_r_5 (n,field,r)
 
 for i=[0:63]
 	found=0;
