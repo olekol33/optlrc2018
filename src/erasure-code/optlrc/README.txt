@@ -25,6 +25,9 @@ In 'Optimal LRC codes for all lenghts n<= q' [4] a new construction was develope
 -----------------------
 Implementation content
 -----------------------
+
+### Ceph ###
+
 ceph/src/erasure-code/optlrc/CMakeLists.txt
 * Build file
 
@@ -47,6 +50,20 @@ ceph/src/erasure-code/optlrc/Makefile.am
 
 ceph/src/erasure-code/CMakeLists.txt
 * Build file
+
+### Matlab ###
+
+ceph/src/erasure-code/optlrc/matlab/calc_optlrc.m
+* The main function for calculating the generator matrix
+
+ceph/src/erasure-code/optlrc/matlab/calc_optlrc_coef.m
+* Greedy algorithm to calculate linear coefficients for the generator matrix.
+
+ceph/src/erasure-code/optlrc/matlab/g_for_r_5.m
+* r=5 is a special case as described in the original paper [1]. This function calculated the generator polynomial for this case.
+
+ceph/src/erasure-code/optlrc/matlab/ppower.m
+* Retunrs a polynomial in the power of 'p'
 
 -----------------------
 Implementation
@@ -102,11 +119,15 @@ Was fixed to:
           
 - The code was implemented on Ceph 12.0.2
 
+- Matlab code will generate a generator matrix for most (n,k,r), however for r=5 the code will generate a generator polynomial, but a generator matrix needs to be calculated manually.
+
 -----------------------
 Running instructions
 -----------------------
 ## Matlab ##
 
+Run with:
+calc_optlrc (n,k,r)
 
 ## Build ##
 
@@ -119,7 +140,17 @@ For the purpose of our research the source code was built with deb.
 The running instructions are based on the original Ceph LRC plugin:
 http://docs.ceph.com/docs/mimic/rados/operations/erasure-code-lrc/
 
-For creating an Optimal-LRC pool use :
+For creating an Optimal-LRC pool use the following examle:
+
+bin/ceph osd erasure-code-profile set myprofile \
+     plugin=optlrc \
+     mapping=DD_DD____ \
+     n=9 \
+     k=4 \
+     r=2 \
+     ruleset-steps='[
+                     [ "chooseleaf", "osd", 9 ],
+                    ]'	
 
 -----------------------
 Reference
