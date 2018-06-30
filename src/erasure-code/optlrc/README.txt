@@ -135,6 +135,16 @@ Follow the instructions in /README.md
 
 For the purpose of our research the source code was built with deb.
 
+We have used the following instructions:
+
+git clone https://github.com/olekol33/optlrc2018.git
+sudo apt-get install dpkg-dev;
+git submodule update --init --recursive
+./install-deps.sh
+dpkg-checkbuilddeps;
+dpkg-buildpackage -j80
+
+
 ## Building Ceph Optimal-LRC pool ##
 
 The running instructions are based on the original Ceph LRC plugin:
