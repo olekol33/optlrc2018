@@ -19,7 +19,7 @@ Optimal-LRC
 -----------------------
 Optimal-LRC is a recently proposed [1] full-LRC . In this code, k data blocks and m global parities are divided into groups of size r, and a local parity is added to each group, allowing repair of any lost block by the r surviving blocks in its group. r does not necessarily divide m + k, but Optimal-LRC requires that n mod (r + 1) != 1.
 
-In 'Optimal LRC codes for all lenghts n<= q' [4] a new construction was developed based on the original construction. In the new construiction Optimal-LRC has optimal minimum distance for all n mod (r + 1) != 1. This folder contains the new implementation.
+In 'Optimal LRC codes for all lenghts n<= q' [4] a new construction was developed based on the original construction. In the new construiction Optimal-LRC has optimal minimum distance for all n mod (r + 1) != 1. This folder contains the new implementation (with the exception of having the current decode function support only a single erasure in a local group, while Optimal-LRC can support multiple erasures).
 
 
 -----------------------
@@ -86,7 +86,7 @@ decode_chunks:
 2) Per each erasure, compiles a list of pointers to surviving blocks in its local group and passess them to optlrc_decode_local
 
 optlrc_decode_local:
-The structure of Optimal-LRC allows us to decode a chunk using a XOR operation on all other chunk it its local group.
+The structure of Optimal-LRC allows us to decode a chunk using a XOR operation on all other chunk it its local group. The function supports decode only in the case of a single erasure in a local group.
 The function has a list of all surviving chunks in the local group and it goes over them one by one, XORing each one with the XOR of all previous chunks. The result is placed in the location of the erased chunk finalizing the reconstruction process.
 
 -----------------------
@@ -120,6 +120,7 @@ Was fixed to:
 - The code was implemented on Ceph 12.0.2
 
 - Matlab code will generate a generator matrix for most (n,k,r), however for r=5 the code will generate a generator polynomial, but a generator matrix needs to be calculated manually.
+The case of r=5 is mathematically unique since it doesn't fall into the general cases presented in the original paper [1]. It is also specifically mentioned in the original paper.
 
 -----------------------
 Running instructions
