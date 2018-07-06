@@ -78,6 +78,8 @@ The encode proecess works the following:
 4) Pass the generator matrix, pointers to data and coding chunks and blocksize to jerasure_matrix_encode for encoding
 
 Decode process:
+Our implementation of Optimal-LRC was devised to simulate only a single erasure in a local group, while Optimal-LRC in general supports repair of multiple erasures.
+
 minimum_to_decode: Calculates the minimum number and IDs of chunks required to decode an erased chunk. It's based on the main assumption of our implementation, that we have at most one erasure in each local group.
 If a chunk in a local group is erased, compiles a list of all surviving chunks.
 
@@ -119,8 +121,10 @@ Was fixed to:
           
 - The code was implemented on Ceph 12.0.2
 
+- For the following (n,k,r) combinations the generator matrix has already been computed and is available in ErasureCodeOptLrc_configs.h: (9,4,2), (10,6,4), (10,6,3), (15,8,4), (15,8,5), (16,12,7), (18,12,3), (18,12,4), (15,10,4), (14,10,4), (12,8,3), (12,8,4), (17,12,4), (14,10,6), (14,10,5), (12,8,5), (17,12,5), (17,12,6), (15,10,5)
+
 - Matlab code will generate a generator matrix for most (n,k,r), however for r=5 the code will generate a generator polynomial, but a generator matrix needs to be calculated manually.
-The case of r=5 is mathematically unique since it doesn't fall into the general cases presented in the original paper [1]. It is also specifically mentioned in the original paper.
+The case of r=5 is mathematically unique since it doesn't fall into the general cases presented in the original paper [1]. It is also specifically mentioned in the original paper. 
 
 -----------------------
 Running instructions
