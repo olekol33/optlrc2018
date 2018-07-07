@@ -94,6 +94,7 @@ unsigned int get_chunk_size(unsigned int object_size) const override ;
  * This function is a wrapper for optlrc_encode. 
  *
  * Parameters:
+ * want_to_encode -  want_to_read chunk indexes to be decoded
  * encoded - the map we will encode
  *
  * Return:
@@ -103,7 +104,8 @@ unsigned int get_chunk_size(unsigned int object_size) const override ;
  * Notes:
  *
  */
-int encode_chunks(std::map<int, bufferlist> *encoded) override;
+int encode_chunks(const std::set<int> &want_to_encode,
+      	    std::map<int, bufferlist> *encoded) override;
 /*
  * Name: optlrc_decode_local
  *
