@@ -143,7 +143,7 @@ For the purpose of our research the source code was built with deb.
 We have used the following instructions:
 
 git clone https://github.com/olekol33/optlrc2018.git
-sudo apt-get install dpkg-dev;
+cd optlrc2018
 git submodule update --init --recursive
 ./install-deps.sh
 dpkg-checkbuilddeps;
