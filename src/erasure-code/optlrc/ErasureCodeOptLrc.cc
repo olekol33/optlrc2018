@@ -295,7 +295,8 @@ int ErasureCodeOptLrc::parse_ruleset_step(string description_string,
   ruleset_steps.push_back(Step(op, type, n));
   return 0;
 }
-int ErasureCodeOptLrc::encode_chunks(map<int, bufferlist> *encoded)
+int ErasureCodeOptLrc::encode_chunks(const set<int> &want_to_encode,
+				       map<int, bufferlist> *encoded)
 {
 	char *chunks[n];
         int ind=0;
